@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-bangla: "Hind Siliguri", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand: water teal */
+  --color-brand-50: #effaf9;
+  --color-brand-100: #d6f2f0;
+  --color-brand-200: #b0e4e2;
+  --color-brand-300: #7ccfcd;
+  --color-brand-400: #46b2b2;
+  --color-brand-500: #2a9698;
+  --color-brand-600: #20787d;
+  --color-brand-700: #1e6166;
+  --color-brand-800: #1e4f53;
+  --color-brand-900: #1c4246;
+  --color-brand-950: #0b282b;
+
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.05);
+  --shadow-pop: 0 10px 30px -10px rgb(15 23 42 / 0.18), 0 4px 10px -6px rgb(15 23 42 / 0.08);
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-in: slide-in 200ms ease-out;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-in {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-screen min-w-[320px] bg-slate-50 font-sans text-slate-800 antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-500;
+  }
+
+  ::selection {
+    @apply bg-brand-100 text-brand-900;
+  }
+}
