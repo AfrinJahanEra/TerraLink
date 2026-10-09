@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn'
 
 const statusStyles = {
   needs_review: { label: 'Needs review', className: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
-  stable: { label: 'Stable', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
+  no_change: { label: 'No change', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
   insufficient_data: { label: 'Insufficient data', className: 'bg-slate-100 text-slate-600 ring-slate-200', dot: 'bg-slate-400' },
 }
 
@@ -13,7 +13,7 @@ export function SiteSnapshot({ sites }) {
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
         <div><h2 className="text-sm font-semibold text-slate-900">Wetland sites</h2><p className="mt-0.5 text-xs text-slate-400">Latest monitoring snapshot</p></div>
-        <Link to="/map" className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">Open map <ArrowRight size={14} /></Link>
+        <Link to="/map" className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">Open map <ArrowRight size={14} className="text-slate-500" /></Link>
       </div>
 
       <div className="divide-y divide-slate-100">
@@ -30,7 +30,7 @@ export function SiteSnapshot({ sites }) {
                 <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400"><MapPin size={11} /> {site.location} · {site.area}</p>
               </div>
               <span className={cn('hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ring-1 ring-inset sm:inline-flex', status.className)}><span className={cn('size-1.5 rounded-full', status.dot)} />{status.label}</span>
-              <ArrowRight size={15} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-700" />
+              <ArrowRight size={15} className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
             </Link>
           )
         })}

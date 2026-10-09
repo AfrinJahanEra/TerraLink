@@ -14,6 +14,7 @@ import {
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { useApp } from '../hooks/useApp'
 
 const modules = {
   map: { eyebrow: 'Monitoring', title: 'Wetland map', description: 'Explore five selected ponds and wetlands, filter by review status, and open the correct site record.', icon: MapPinned, next: '/sites/pond-a', nextLabel: 'Preview Pond A', features: ['Interactive site markers', 'Search and status filters', 'Map attribution'] },
@@ -27,8 +28,11 @@ const modules = {
 }
 
 export function ModulePage({ type }) {
+  const { role } = useApp()
   const module = modules[type]
   const Icon = module.icon
+  const nextPath = type === 'assistant' && role.id !== 'manager' ? '/dashboard' : module.next
+  const nextLabel = type === 'assistant' && role.id !== 'manager' ? 'Return to dashboard' : module.nextLabel
 
   return (
     <div className="animate-fade-in">
@@ -42,7 +46,7 @@ export function ModulePage({ type }) {
           <div className="relative flex items-center justify-center overflow-hidden border-b border-slate-100 bg-slate-50/70 p-8 lg:border-b-0 lg:border-r">
             <div className="absolute inset-0 opacity-50 [background-image:radial-gradient(#b0e4e2_1px,transparent_1px)] [background-size:22px_22px]" />
             <div className="relative flex max-w-md flex-col items-center text-center">
-              <span className="grid size-20 place-items-center rounded-2xl border border-brand-100 bg-white text-brand-700 shadow-card"><Icon size={34} strokeWidth={1.6} /></span>
+              <span className="grid size-20 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-card"><Icon size={34} strokeWidth={1.6} /></span>
               <h3 className="mt-6 text-lg font-semibold text-slate-900">{module.title} workspace</h3>
               <p className="mt-2 text-sm leading-6 text-slate-500">The reusable navigation and responsive page foundation are complete. Functional records and interactions will be connected in their scheduled phase.</p>
             </div>
@@ -60,9 +64,9 @@ export function ModulePage({ type }) {
 
             <div className="mt-10 border-t border-slate-100 pt-5">
               {type === 'integrations' && (
-                <div className="mb-5 flex items-center gap-3 text-xs text-slate-500"><span className="flex -space-x-1.5"><span className="grid size-7 place-items-center rounded-full border-2 border-white bg-red-50 text-red-600"><MessageCircle size={13} /></span><span className="grid size-7 place-items-center rounded-full border-2 border-white bg-blue-50 text-blue-600"><CalendarDays size={13} /></span></span>Real platform actions, with safe fallbacks</div>
+                <div className="mb-5 flex items-center gap-3 text-xs text-slate-500"><span className="flex -space-x-1.5"><span className="grid size-7 place-items-center rounded-full border-2 border-white bg-slate-100 text-slate-600"><MessageCircle size={13} /></span><span className="grid size-7 place-items-center rounded-full border-2 border-white bg-slate-200 text-slate-600"><CalendarDays size={13} /></span></span>Real platform actions, with safe fallbacks</div>
               )}
-              <Button as={Link} to={module.next} variant="secondary" className="w-full">{module.nextLabel} <ArrowRight size={16} /></Button>
+              <Button as={Link} to={nextPath} variant="secondary" className="w-full">{nextLabel} <ArrowRight size={16} /></Button>
             </div>
           </div>
         </div>

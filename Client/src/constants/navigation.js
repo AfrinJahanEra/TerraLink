@@ -24,11 +24,18 @@ export const NAV_ITEMS = [
   { label: 'Insights', items: [
     { label: 'Reports', path: '/reports', icon: FileText },
     { label: 'Bangla assistant', path: '/assistant', icon: BotMessageSquare },
-    { label: 'Integrations', path: '/integrations', icon: PlugZap },
+    { label: 'Integrations', path: '/integrations', icon: PlugZap, roles: ['manager'] },
   ] },
 ]
 
 export const FLAT_NAV_ITEMS = NAV_ITEMS.flatMap((group) => group.items)
+
+export function getNavigationForRole(roleId) {
+  return NAV_ITEMS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.roles || item.roles.includes(roleId)),
+  })).filter((group) => group.items.length)
+}
 
 export function getPageTitle(pathname) {
   if (pathname.startsWith('/sites/')) return 'Change analysis'

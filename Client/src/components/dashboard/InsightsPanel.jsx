@@ -38,7 +38,7 @@ export function MonitoringTrend({ data, range, onRangeChange }) {
   )
 }
 
-export function BudgetCard({ budget }) {
+export function BudgetCard({ budget, title = 'Budget overview', subtitle = 'Current programme budget' }) {
   const remaining = budget.total - budget.spent
   const usedPercent = Math.round((budget.spent / budget.total) * 100)
   const pendingPercent = Math.round((budget.pending / budget.total) * 100)
@@ -47,7 +47,7 @@ export function BudgetCard({ budget }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
-      <div className="flex items-center justify-between"><div><h2 className="text-sm font-semibold text-slate-900">Budget overview</h2><p className="mt-0.5 text-xs text-slate-400">Current programme budget</p></div><Link to="/budget" aria-label="Open budget" className="rounded-lg p-2 text-slate-400 hover:bg-slate-50 hover:text-brand-700"><ArrowRight size={16} /></Link></div>
+      <div className="flex items-center justify-between"><div><h2 className="text-sm font-semibold text-slate-900">{title}</h2><p className="mt-0.5 text-xs text-slate-400">{subtitle}</p></div><Link to="/budget" aria-label="Open budget" className="rounded-lg p-2 text-slate-500 hover:bg-slate-50 hover:text-slate-800"><ArrowRight size={16} /></Link></div>
       <div className="mt-4 flex items-center gap-4">
         <div className="relative size-28 shrink-0">
           <svg viewBox="0 0 100 100" className="-rotate-90 size-full" role="img" aria-label={`${usedPercent}% of programme budget spent`}>

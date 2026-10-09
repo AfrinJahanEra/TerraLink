@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 const markerColors = {
   needs_review: '#d97706',
-  stable: '#059669',
+  no_change: '#059669',
   insufficient_data: '#64748b',
 }
 

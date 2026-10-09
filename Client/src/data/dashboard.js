@@ -12,6 +12,10 @@ export const dashboardSites = [
     coordinates: [23.9992, 90.4204],
     image: pondAfterImage,
     source: 'Illustrative visual',
+    lastObserved: '08 Oct 2026',
+    comparison: 'Mar 2022 – Mar 2024',
+    clearCoverage: '86%',
+    reviewNote: 'Possible reduction in visible water area requires field verification.',
   },
   {
     id: 'pond-b',
@@ -19,10 +23,14 @@ export const dashboardSites = [
     location: 'Savar',
     area: '7.8 ha',
     change: 2.3,
-    status: 'stable',
+    status: 'no_change',
     coordinates: [23.8583, 90.2667],
     image: pondBeforeImage,
     source: 'Illustrative visual',
+    lastObserved: '06 Oct 2026',
+    comparison: 'Feb 2023 – Feb 2025',
+    clearCoverage: '91%',
+    reviewNote: 'Visible water area remains within the expected seasonal range.',
   },
   {
     id: 'wetland-c',
@@ -34,6 +42,10 @@ export const dashboardSites = [
     coordinates: [23.7947, 90.4019],
     image: pondAfterImage,
     source: 'Illustrative visual',
+    lastObserved: '04 Oct 2026',
+    comparison: 'Apr 2022 – Apr 2025',
+    clearCoverage: '42%',
+    reviewNote: 'Cloud and shadow coverage prevent a reliable comparison.',
   },
   {
     id: 'lake-d',
@@ -41,10 +53,14 @@ export const dashboardSites = [
     location: 'Narayanganj',
     area: '11.6 ha',
     change: 1.5,
-    status: 'stable',
+    status: 'no_change',
     coordinates: [23.6238, 90.5],
     image: pondBeforeImage,
     source: 'Illustrative visual',
+    lastObserved: '02 Oct 2026',
+    comparison: 'Jan 2023 – Jan 2025',
+    clearCoverage: '89%',
+    reviewNote: 'No material change is visible in the selected comparison.',
   },
   {
     id: 'beel-e',
@@ -56,6 +72,10 @@ export const dashboardSites = [
     coordinates: [24.0608, 90.3976],
     image: pondAfterImage,
     source: 'Illustrative visual',
+    lastObserved: '30 Sep 2026',
+    comparison: 'Mar 2022 – Mar 2024',
+    clearCoverage: '82%',
+    reviewNote: 'A smaller possible change requires a site visit before classification.',
   },
 ]
 
@@ -63,7 +83,7 @@ export const dashboardTasks = [
   { id: 'TL-104', title: 'Verify water-area change', site: 'Pond A', assignee: 'Rahim Uddin', initials: 'RU', due: 'Today', status: 'review_pending' },
   { id: 'TL-103', title: 'Upload site visit evidence', site: 'Beel E', assignee: 'Sadia Akter', initials: 'SA', due: 'Tomorrow', status: 'in_progress' },
   { id: 'TL-102', title: 'Review cloud coverage', site: 'Wetland C', assignee: 'Tanvir Hasan', initials: 'TH', due: '12 Oct', status: 'approved' },
-  { id: 'TL-101', title: 'Validate seasonal comparison', site: 'Lake D', assignee: 'Farzana Islam', initials: 'FI', due: '14 Oct', status: 'review_pending' },
+  { id: 'TL-101', title: 'Validate seasonal comparison', site: 'Lake D', assignee: 'Rahim Uddin', initials: 'RU', due: '14 Oct', status: 'review_pending' },
 ]
 
 export const dashboardActivities = [

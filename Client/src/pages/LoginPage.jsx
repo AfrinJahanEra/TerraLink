@@ -11,6 +11,7 @@ export function LoginPage() {
   const { role, selectRole } = useApp()
   const [selected, setSelected] = useState('manager')
   const navigate = useNavigate()
+  const selectedRole = ROLE_LIST.find((item) => item.id === selected)
 
   if (role) return <Navigate to="/dashboard" replace />
 
@@ -60,6 +61,15 @@ export function LoginPage() {
             </div>
           </fieldset>
 
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3.5">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700"><ShieldCheck size={15} className="text-slate-500" /> {selectedRole.label} access</div>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+              {selectedRole.capabilities.map((capability) => (
+                <li key={capability} className="flex items-start gap-2 text-[11px] leading-4 text-slate-500"><Check size={13} className="mt-0.5 shrink-0 text-slate-500" />{capability}</li>
+              ))}
+            </ul>
+          </div>
+
           <Button type="button" onClick={enterWorkspace} className="mt-6 w-full sm:w-auto sm:self-start">
             Enter workspace <ArrowRight size={17} />
           </Button>
@@ -73,7 +83,7 @@ export function LoginPage() {
         <div className="absolute -right-32 -top-36 size-[420px] rounded-full border border-white/10" />
         <div className="absolute -right-20 -top-24 size-[300px] rounded-full border border-white/10" />
         <div className="relative">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-brand-100"><Sparkles size={14} /> A connected project workflow</span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-brand-100"><Sparkles size={14} className="text-white/70" /> A connected project workflow</span>
           <h2 className="mt-6 max-w-md text-3xl font-semibold leading-tight tracking-tight">Evidence, responsibilities, and costs—kept together.</h2>
         </div>
 
@@ -83,10 +93,10 @@ export function LoginPage() {
             <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-200">Needs review</span>
           </div>
           <div className="grid grid-cols-2 gap-6 py-6">
-            <div><Map size={20} className="text-brand-300" /><p className="mt-3 text-2xl font-semibold">5</p><p className="text-xs text-brand-100/70">Monitored sites</p></div>
-            <div><Database size={20} className="text-brand-300" /><p className="mt-3 text-2xl font-semibold">2019–24</p><p className="text-xs text-brand-100/70">Comparison period</p></div>
+            <div><Map size={20} className="text-white/70" /><p className="mt-3 text-2xl font-semibold">5</p><p className="text-xs text-brand-100/70">Monitored sites</p></div>
+            <div><Database size={20} className="text-white/70" /><p className="mt-3 text-2xl font-semibold">2019–24</p><p className="text-xs text-brand-100/70">Comparison period</p></div>
           </div>
-          <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] px-4 py-3 text-xs text-brand-50"><Waves size={18} className="text-brand-300" /><span>Possible change → Review → Task → Cost → Report</span></div>
+          <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] px-4 py-3 text-xs text-brand-50"><Waves size={18} className="text-white/70" /><span>Possible change → Review → Task → Cost → Report</span></div>
         </div>
 
         <p className="relative max-w-md text-sm leading-6 text-brand-100/70">Designed for NGO project managers and field coordinators protecting ponds and wetlands in Bangladesh.</p>

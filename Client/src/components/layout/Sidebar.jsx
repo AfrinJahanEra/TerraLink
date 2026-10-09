@@ -1,10 +1,14 @@
 import { ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-import { NAV_ITEMS } from '../../constants/navigation'
+import { getNavigationForRole } from '../../constants/navigation'
+import { useApp } from '../../hooks/useApp'
 import { cn } from '../../utils/cn'
 import { Logo } from '../brand/Logo'
 
 export function Sidebar({ collapsed, mobileOpen, onCollapse, onClose }) {
+  const { role } = useApp()
+  const navigation = getNavigationForRole(role.id)
+
   return (
     <>
       {mobileOpen && (
@@ -36,10 +40,10 @@ export function Sidebar({ collapsed, mobileOpen, onCollapse, onClose }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
-          {NAV_ITEMS.map((group) => (
+          {navigation.map((group) => (
             <div key={group.label} className="mb-6 last:mb-0">
               <p className={cn('mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400', collapsed && 'lg:text-center lg:text-[0px]')}>
-                {collapsed ? '•' : group.label}
+                {collapsed ? <span className="mx-auto block h-px w-5 bg-slate-200" /> : group.label}
               </p>
               <div className="space-y-1">
                 {group.items.map(({ label, path, icon: Icon }) => (
@@ -58,7 +62,7 @@ export function Sidebar({ collapsed, mobileOpen, onCollapse, onClose }) {
                   >
                     {({ isActive }) => (
                       <>
-                        <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className={cn('shrink-0', isActive ? 'text-brand-700' : 'text-slate-400 group-hover:text-slate-600')} />
+                        <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className={cn('shrink-0', isActive ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600')} />
                         <span className={cn('truncate', collapsed && 'lg:hidden')}>{label}</span>
                       </>
                     )}

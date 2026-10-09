@@ -2,8 +2,13 @@ import {
   ArrowRight,
   CalendarRange,
   CircleAlert,
+  CircleCheck,
   ClipboardCheck,
   Droplets,
+  FileClock,
+  Files,
+  MapPinned,
+  ReceiptText,
   RefreshCw,
   WalletCards,
 } from 'lucide-react'
@@ -46,15 +51,87 @@ function formatToday() {
   }).format(new Date())
 }
 
-function PriorityObservation({ site }) {
+const roleViews = {
+  manager: {
+    scope: 'Full programme oversight',
+    guidance: 'Review findings, approve follow-up work, and monitor programme costs.',
+    taskTitle: 'Programme tasks',
+    taskSubtitle: 'Priority work across all sites',
+    budgetTitle: 'Budget overview',
+    budgetSubtitle: 'Current programme budget',
+    actionLabel: 'Review finding',
+    actionTo: '/sites/pond-a',
+    priorityTitle: 'Priority review',
+    showIntegrations: true,
+  },
+  coordinator: {
+    scope: 'Assigned field operations',
+    guidance: 'Update your assigned checks, evidence, progress, and actual expenses.',
+    taskTitle: 'My assigned tasks',
+    taskSubtitle: 'Work assigned to Rahim Uddin',
+    budgetTitle: 'My field costs',
+    budgetSubtitle: 'Costs recorded against assigned work',
+    actionLabel: 'Open assignment',
+    actionTo: '/tasks',
+    priorityTitle: 'Next field check',
+    siteIds: ['pond-a', 'pond-b', 'lake-d'],
+    taskAssignee: 'Rahim Uddin',
+    showIntegrations: false,
+  },
+  operator: {
+    scope: 'Records and reporting access',
+    guidance: 'Maintain task, team, evidence, and expense records for the programme.',
+    taskTitle: 'Records requiring updates',
+    taskSubtitle: 'Open records across the programme',
+    budgetTitle: 'Expense records',
+    budgetSubtitle: 'Planned and recorded project spending',
+    actionLabel: 'Update record',
+    actionTo: '/tasks',
+    priorityTitle: 'Record requiring action',
+    showIntegrations: false,
+  },
+}
+
+function buildKpis(roleId, needsReview, visibleSites, visibleTasks) {
+  if (roleId === 'coordinator') return [
+    { label: 'Assigned sites', value: visibleSites.length, trend: 12, trendLabel: 'this month', icon: MapPinned, to: '/map' },
+    { label: 'My open tasks', value: visibleTasks.length, trend: -20, trendLabel: 'vs. last week', icon: ClipboardCheck, to: '/tasks' },
+    { label: 'Due today', value: visibleTasks.filter((task) => task.due === 'Today').length, trend: 0, trendLabel: 'requires attention', icon: FileClock, to: '/tasks' },
+    { label: 'Costs recorded', value: '৳4.2k', trend: 8, trendLabel: 'this month', icon: ReceiptText, to: '/budget' },
+  ]
+  if (roleId === 'operator') return [
+    { label: 'Site records', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Files, to: '/map' },
+    { label: 'Review queue', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/tasks' },
+    { label: 'Open tasks', value: visibleTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
+    { label: 'Reports ready', value: 3, trend: 50, trendLabel: 'this month', icon: FileClock, to: '/reports' },
+  ]
+  return [
+    { label: 'Monitored sites', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Droplets, to: '/map' },
+    { label: 'Needs review', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/tasks' },
+    { label: 'Open tasks', value: visibleTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
+    { label: 'Budget spent', value: '৳18.2k', trend: 7.8, trendLabel: 'this month', icon: WalletCards, to: '/budget' },
+  ]
+}
+
+function RoleScope({ role, view }) {
+  const Icon = role.icon
+  return (
+    <div className="flex items-center gap-3 border-l-2 border-slate-300 pl-3">
+      <Icon size={17} className="shrink-0 text-slate-600" />
+      <p className="text-xs leading-5 text-slate-500"><strong className="font-semibold text-slate-700">{view.scope}.</strong> {view.guidance}</p>
+    </div>
+  )
+}
+
+function PriorityObservation({ site, view }) {
   return (
     <section className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-card">
       <div className="flex flex-col gap-4 border-b border-amber-100 bg-amber-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-700"><CircleAlert size={18} /></span>
-          <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold text-slate-900">Priority review</h2><Badge tone="amber">Needs review</Badge></div><p className="mt-0.5 text-xs text-slate-500">A possible water-area change needs human verification.</p></div>
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><CircleAlert size={18} /></span>
+          <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold text-slate-900">{view.priorityTitle}</h2><Badge tone="amber">Needs review</Badge></div><p className="mt-0.5 text-xs text-slate-500">A possible water-area change needs human verification.</p></div>
         </div>
-        <Button as={Link} to={`/sites/${site.id}`} className="min-h-9 self-start px-3 text-xs sm:self-auto">Review finding <ArrowRight size={14} /></Button>
+        <Button as={Link} to={view.actionTo} className="min-h-9 self-start px-3 text-xs sm:self-auto">{view.actionLabel} <ArrowRight size={14} /></Button>
       </div>
 
       <div className="grid gap-6 p-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
@@ -91,12 +168,13 @@ export function DashboardPage() {
 
   const prioritySite = dashboardSites.find((site) => site.id === 'pond-a')
   const needsReview = dashboardSites.filter((site) => site.status === 'needs_review').length
-  const kpis = useMemo(() => [
-    { label: 'Monitored sites', value: dashboardSites.length, trend: 25, trendLabel: 'this quarter', tone: 'blue', icon: Droplets, to: '/map' },
-    { label: 'Needs review', value: needsReview, trend: -33, trendLabel: 'vs. last week', tone: 'amber', icon: CircleAlert, to: '/tasks' },
-    { label: 'Open tasks', value: dashboardTasks.length, trend: 14, trendLabel: 'this week', tone: 'purple', icon: ClipboardCheck, to: '/tasks' },
-    { label: 'Budget spent', value: '৳18.2k', trend: 7.8, trendLabel: 'this month', tone: 'emerald', icon: WalletCards, to: '/budget' },
-  ], [needsReview])
+  const view = roleViews[role.id]
+  const visibleSites = view.siteIds ? dashboardSites.filter((site) => view.siteIds.includes(site.id)) : dashboardSites
+  const visibleTasks = view.taskAssignee ? dashboardTasks.filter((task) => task.assignee === view.taskAssignee) : dashboardTasks
+  const kpis = useMemo(
+    () => buildKpis(role.id, needsReview, visibleSites, visibleTasks),
+    [role.id, needsReview, visibleSites, visibleTasks],
+  )
 
   function refreshDashboard() {
     setLastUpdated('Updated now')
@@ -109,7 +187,8 @@ export function DashboardPage() {
         <div>
           <p className="text-xs font-semibold text-brand-700">{formatToday()}</p>
           <h2 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-slate-950 sm:text-[28px]">{getGreeting()}, {role.user.name.split(' ')[0]}.</h2>
-          <p className="mt-1.5 text-sm text-slate-500">Here’s what needs attention across your wetland programme.</p>
+          <p className="mt-1.5 text-sm text-slate-500">Here’s what needs attention in your {role.label.toLowerCase()} workspace.</p>
+          <div className="mt-3 max-w-2xl"><RoleScope role={role} view={view} /></div>
         </div>
         <div className="flex items-center gap-2">
           <label className="relative flex items-center">
@@ -118,7 +197,7 @@ export function DashboardPage() {
               <option>Last 7 days</option><option>Last 30 days</option><option>Last 90 days</option>
             </select>
           </label>
-          <button type="button" onClick={refreshDashboard} title="Refresh dashboard" aria-label="Refresh dashboard" className="grid size-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-brand-700"><RefreshCw size={16} /></button>
+          <button type="button" onClick={refreshDashboard} title="Refresh dashboard" aria-label="Refresh dashboard" className="grid size-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-800"><RefreshCw size={16} /></button>
         </div>
       </header>
 
@@ -126,18 +205,18 @@ export function DashboardPage() {
         {kpis.map((metric) => <KpiCard key={metric.label} {...metric} />)}
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 shadow-card"><span>Showing {overviewRange.toLowerCase()} · All sample sites</span><span className="font-medium text-emerald-700">● {lastUpdated}</span></div>
+      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 shadow-card"><span>Showing {overviewRange.toLowerCase()} · {visibleSites.length} sample sites</span><span className="flex items-center gap-1.5 font-medium text-slate-600"><CircleCheck size={13} /> {lastUpdated}</span></div>
 
-      <IntegrationStrip integrations={integrationStatus} />
+      <IntegrationStrip integrations={integrationStatus} canManage={view.showIntegrations} />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.75fr)]">
         <div className="space-y-6">
-          <PriorityObservation site={prioritySite} />
+          <PriorityObservation site={prioritySite} view={view} />
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(330px,0.85fr)]">
-            <MapPreview sites={dashboardSites} />
-            <SiteSnapshot sites={dashboardSites} />
+            <MapPreview sites={visibleSites} />
+            <SiteSnapshot sites={visibleSites} />
           </div>
-          <TaskList tasks={dashboardTasks} />
+          <TaskList tasks={visibleTasks} title={view.taskTitle} subtitle={view.taskSubtitle} />
           <MonitoringTrend data={trendData[chartRange]} range={chartRange} onRangeChange={setChartRange} />
         </div>
 
@@ -148,7 +227,7 @@ export function DashboardPage() {
             onToggle={() => setShowAllActivity((value) => !value)}
             onMarkAll={() => setActivities((items) => items.map((item) => ({ ...item, unread: false })))}
           />
-          <BudgetCard budget={budgetSummary} />
+          <BudgetCard budget={budgetSummary} title={view.budgetTitle} subtitle={view.budgetSubtitle} />
           <AssistantPrompt />
         </aside>
       </div>
