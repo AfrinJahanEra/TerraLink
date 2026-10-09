@@ -15,6 +15,7 @@ export function createActivity(action, actor) {
     id: `history-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     action,
     actor,
+    at: new Date().toISOString(),
     time: new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
   }
 }

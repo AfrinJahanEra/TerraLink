@@ -60,7 +60,7 @@ export function TeamPage() {
   return (
     <div className="animate-fade-in space-y-5 pb-8">
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">People & capacity</p><h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Team</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Keep contact details, availability, and live task workload together.</p></div>
+        <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">People & capacity</p><p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">Keep contact details, availability, and live task workload together.</p></div>
         {canManage && <Button type="button" onClick={() => openForm()}><UserPlus size={16} />Add member</Button>}
       </header>
 

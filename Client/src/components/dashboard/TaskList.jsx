@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { cn } from '../../utils/cn'
 
 const statuses = {
-  review_pending: { label: 'Review pending', className: 'bg-amber-50 text-amber-700' },
-  approved: { label: 'Approved', className: 'bg-sky-50 text-sky-700' },
-  in_progress: { label: 'In progress', className: 'bg-brand-50 text-brand-700' },
-  reported_complete: { label: 'Reported complete', className: 'bg-emerald-50 text-emerald-700' },
-  unknown: { label: 'Unknown', className: 'bg-slate-100 text-slate-600' },
+  review_pending: { label: 'Review pending', dot: 'bg-amber-500' },
+  approved: { label: 'Approved', dot: 'bg-sky-500' },
+  in_progress: { label: 'In progress', dot: 'bg-brand-600' },
+  reported_complete: { label: 'Reported complete', dot: 'bg-emerald-500' },
+  unknown: { label: 'Unknown', dot: 'bg-slate-400' },
 }
 
 export function TaskList({ tasks, title = 'Open tasks', subtitle = 'Priority work across all sites' }) {
@@ -24,8 +24,8 @@ export function TaskList({ tasks, title = 'Open tasks', subtitle = 'Priority wor
             <Link key={task.id} to="/tasks" className="group grid gap-3 px-5 py-3.5 transition hover:bg-slate-50/80 sm:grid-cols-[minmax(0,1fr)_110px_90px_120px] sm:items-center">
               <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800">{task.title}</p><p className="mt-1 text-[11px] text-slate-400">{task.id} · {task.site}</p></div>
               <div className="flex items-center gap-2"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-slate-100 text-[9px] font-bold text-slate-600">{task.initials}</span><span className="truncate text-xs text-slate-500">{task.assignee.split(' ')[0]}</span></div>
-              <span className={cn('flex items-center gap-1 text-xs', task.due === 'Today' ? 'font-semibold text-rose-600' : 'text-slate-500')}><CalendarDays size={13} className="text-slate-500" />{task.due}</span>
-              <span className={cn('w-fit rounded-full px-2.5 py-1 text-[10px] font-semibold', status.className)}>{status.label}</span>
+              <span className={cn('flex items-center gap-1 text-xs', task.due === 'Today' ? 'font-semibold text-slate-900' : 'text-slate-500')}><CalendarDays size={13} className="text-slate-500" />{task.due}</span>
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200"><span className={cn('size-1.5 rounded-full', status.dot)} />{status.label}</span>
             </Link>
           )
         })}

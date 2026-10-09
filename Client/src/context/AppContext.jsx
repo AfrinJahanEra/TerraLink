@@ -3,16 +3,25 @@ import { ROLES } from '../constants/roles'
 import { dashboardSites, dashboardTasks } from '../data/dashboard'
 import { defaultIntegrationSettings } from '../data/integrations'
 import { initialExpenses, initialSiteBudgets, initialTeamMembers } from '../data/operations'
+import { initialMeetings, MEETING_TYPES } from '../data/schedule'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
+  addEventToCalendar,
   automateBudgetOverrun,
   automateOverdueTask,
   automateTaskAssignment,
   automateTaskCompletion,
+  emailMeetingInvites as sendMeetingInvites,
+  emailReportToRecipients,
+  emailTaskReminder as sendTaskReminderEmail,
+  recordCalendarDownload,
   runIntegrationTest,
-  sendReportSummaryEmail,
+  whatsappMeetingReminder as openMeetingWhatsApp,
+  whatsappTaskReminder as openTaskWhatsApp,
 } from '../services/automation'
+import { downloadEventIcs, meetingToCalendarEvent, taskToCalendarEvent } from '../services/calendar'
 import { buildSiteBudgetRows, calculateBudgetSummary } from '../utils/budget'
+import { formatLongDate, formatTimeRange } from '../utils/schedule'
 import { isTaskOverdue } from '../utils/tasks'
 import { AppContext } from './app-context'
 
@@ -25,6 +34,7 @@ const initialWorkspace = {
   teamMembers: initialTeamMembers,
   siteBudgets: initialSiteBudgets,
   expenses: initialExpenses,
+  meetings: initialMeetings,
   integrationSettings: defaultIntegrationSettings,
   notificationLogs: [],
   automationKeys: initialAutomationKeys,
@@ -62,6 +72,7 @@ function readWorkspace() {
       teamMembers: Array.isArray(parsed.teamMembers) ? parsed.teamMembers : initialTeamMembers,
       siteBudgets: { ...initialSiteBudgets, ...parsed.siteBudgets },
       expenses: Array.isArray(parsed.expenses) ? parsed.expenses : initialExpenses,
+      meetings: Array.isArray(parsed.meetings) ? parsed.meetings : initialMeetings,
       integrationSettings: {
         ...defaultIntegrationSettings,
         ...parsed.integrationSettings,
@@ -142,6 +153,13 @@ function workspaceReducer(state, action) {
           activityHistory: action.payload.activity ? [action.payload.activity, ...task.activityHistory] : task.activityHistory,
         } : task),
       }
+    case 'ADD_MEETING':
+      return { ...state, meetings: [action.payload, ...state.meetings] }
+    case 'UPDATE_MEETING':
+      return {
+        ...state,
+        meetings: state.meetings.map((meeting) => meeting.id === action.payload.meetingId ? { ...meeting, ...action.payload.changes } : meeting),
+      }
     case 'SET_INTEGRATION_RULE':
       return {
         ...state,
@@ -175,6 +193,7 @@ function workspaceReducer(state, action) {
         teamMembers: [...initialTeamMembers],
         siteBudgets: { ...initialSiteBudgets },
         expenses: [...initialExpenses],
+        meetings: [...initialMeetings],
       }
     default:
       return state
@@ -314,10 +333,106 @@ export function AppProvider({ children }) {
     return runIntegrationTest({ service, manager, settings: workspace.integrationSettings, record: recordNotification })
   }, [manager, recordNotification, workspace.integrationSettings])
 
-  const emailReportSummary = useCallback((reportTitle, summary) => {
-    if (!manager) return Promise.reject(new Error('A project manager contact is required.'))
-    return sendReportSummaryEmail({ manager, reportTitle, summary, settings: workspace.integrationSettings, record: recordNotification })
-  }, [manager, recordNotification, workspace.integrationSettings])
+  const createMeeting = useCallback((meeting) => {
+    dispatch({ type: 'ADD_MEETING', payload: meeting })
+  }, [])
+
+  const updateMeeting = useCallback((meetingId, changes) => {
+    dispatch({ type: 'UPDATE_MEETING', payload: { meetingId, changes } })
+  }, [])
+
+  const meetingAttendees = useCallback(
+    (meeting) => workspace.teamMembers.filter((member) => meeting.attendeeIds?.includes(member.id)),
+    [workspace.teamMembers],
+  )
+
+  const buildMeetingEvent = useCallback((meeting) => {
+    const type = MEETING_TYPES[meeting.type]
+    return meetingToCalendarEvent(meeting, {
+      attendees: meetingAttendees(meeting),
+      site: sites.find((site) => site.id === meeting.siteId),
+      typeLabel: type?.label,
+      reminderMinutes: type?.reminderMinutes,
+    })
+  }, [meetingAttendees, sites])
+
+  /** Must be called directly from a click handler so the calendar tab is not blocked. */
+  const addMeetingToCalendar = useCallback((meeting) => {
+    const fields = { message: `Calendar event: ${meeting.title}`, meetingId: meeting.id, taskId: meeting.taskId ?? '', source: 'Schedule' }
+    return addEventToCalendar({ event: buildMeetingEvent(meeting), fields, record: recordNotification }).then((result) => {
+      if (result.mode !== 'failed') {
+        dispatch({ type: 'UPDATE_MEETING', payload: { meetingId: meeting.id, changes: { calendarStatus: result.mode === 'api' ? 'synced' : 'link', calendarUrl: result.url } } })
+      }
+      return result
+    })
+  }, [buildMeetingEvent, recordNotification])
+
+  const downloadMeetingIcs = useCallback((meeting) => {
+    const event = buildMeetingEvent(meeting)
+    downloadEventIcs(event)
+    recordCalendarDownload({ event, fields: { message: `Calendar file: ${meeting.title}`, meetingId: meeting.id, taskId: meeting.taskId ?? '', source: 'Schedule' }, record: recordNotification })
+    if (!meeting.calendarStatus || meeting.calendarStatus === 'none') {
+      dispatch({ type: 'UPDATE_MEETING', payload: { meetingId: meeting.id, changes: { calendarStatus: 'ics' } } })
+    }
+  }, [buildMeetingEvent, recordNotification])
+
+  const emailMeetingInvites = useCallback((meeting) => {
+    const site = sites.find((item) => item.id === meeting.siteId)
+    const summary = [
+      `${MEETING_TYPES[meeting.type]?.label ?? 'Meeting'}: ${meeting.title}`,
+      `When: ${formatLongDate(meeting.date)}, ${formatTimeRange(meeting)} (Asia/Dhaka)`,
+      `Where: ${meeting.location}`,
+      site && `Site: ${site.name}, ${site.location}`,
+      meeting.taskId && `Linked task: ${meeting.taskId}`,
+      meeting.agenda && `Agenda: ${meeting.agenda}`,
+      `Organiser: ${meeting.organizer}`,
+    ].filter(Boolean).join('\n')
+    return sendMeetingInvites({ meeting, attendees: meetingAttendees(meeting), summary, record: recordNotification })
+  }, [meetingAttendees, recordNotification, sites])
+
+  const whatsappMeetingReminder = useCallback((meeting, memberId) => {
+    const member = workspace.teamMembers.find((item) => item.id === memberId)
+    return openMeetingWhatsApp({
+      meeting,
+      member,
+      dateLabel: formatLongDate(meeting.date),
+      timeRange: formatTimeRange(meeting),
+      language: workspace.integrationSettings.language,
+      record: recordNotification,
+    })
+  }, [recordNotification, workspace.integrationSettings.language, workspace.teamMembers])
+
+  /** Must be called directly from a click handler so the calendar tab is not blocked. */
+  const addTaskToCalendar = useCallback((task) => addEventToCalendar({
+    event: taskToCalendarEvent(task),
+    fields: { message: `Deadline event: ${task.id} · ${task.dueDate}`, taskId: task.id, source: 'Tasks' },
+    record: recordNotification,
+  }), [recordNotification])
+
+  const downloadTaskIcs = useCallback((task) => {
+    const event = taskToCalendarEvent(task)
+    downloadEventIcs(event)
+    return recordCalendarDownload({ event, fields: { message: `Deadline file: ${task.id}`, taskId: task.id, source: 'Tasks' }, record: recordNotification })
+  }, [recordNotification])
+
+  const emailTaskReminder = useCallback((task) => sendTaskReminderEmail({
+    task,
+    assignee: workspace.teamMembers.find((member) => member.name === task.assignee),
+    record: recordNotification,
+  }), [recordNotification, workspace.teamMembers])
+
+  const whatsappTaskReminder = useCallback((task) => openTaskWhatsApp({
+    task,
+    assignee: workspace.teamMembers.find((member) => member.name === task.assignee),
+    language: workspace.integrationSettings.language,
+    record: recordNotification,
+  }), [recordNotification, workspace.integrationSettings.language, workspace.teamMembers])
+
+  const shareReport = useCallback(({ recipientIds, title, summary, note }) => {
+    const recipients = workspace.teamMembers.filter((member) => recipientIds.includes(member.id))
+    if (!recipients.length) return Promise.reject(new Error('Select at least one recipient.'))
+    return emailReportToRecipients({ recipients, reportTitle: title, summary, note, record: recordNotification })
+  }, [recordNotification, workspace.teamMembers])
 
   useEffect(() => {
     if (!role || !workspace.integrationSettings.rules.overdueWhatsapp) return
@@ -344,6 +459,7 @@ export function AppProvider({ children }) {
       teamMembers: workspace.teamMembers,
       siteBudgets: workspace.siteBudgets,
       expenses: workspace.expenses,
+      meetings: workspace.meetings,
       integrationSettings: workspace.integrationSettings,
       notificationLogs: workspace.notificationLogs,
       addNotificationLog: recordNotification,
@@ -361,10 +477,20 @@ export function AppProvider({ children }) {
       updateNotificationStatus,
       clearNotificationLogs,
       sendIntegrationTest,
-      emailReportSummary,
+      createMeeting,
+      updateMeeting,
+      addMeetingToCalendar,
+      downloadMeetingIcs,
+      emailMeetingInvites,
+      whatsappMeetingReminder,
+      addTaskToCalendar,
+      downloadTaskIcs,
+      emailTaskReminder,
+      whatsappTaskReminder,
+      shareReport,
       resetDemo,
     }),
-    [addExpense, addTaskComment, addTeamMember, budgetSummary, clearNotificationLogs, createTask, emailReportSummary, recordDecision, recordNotification, resetDemo, role, sendIntegrationTest, setIntegrationRule, setNotificationLanguage, setRoleId, setSiteBudget, signOut, sites, updateNotificationStatus, updateTask, updateTeamMember, workspace.decisions, workspace.expenses, workspace.integrationSettings, workspace.notificationLogs, workspace.siteBudgets, workspace.tasks, workspace.teamMembers],
+    [addExpense, addMeetingToCalendar, addTaskComment, addTaskToCalendar, addTeamMember, budgetSummary, clearNotificationLogs, createMeeting, createTask, downloadMeetingIcs, downloadTaskIcs, emailMeetingInvites, emailTaskReminder, recordDecision, recordNotification, resetDemo, role, sendIntegrationTest, setIntegrationRule, setNotificationLanguage, setRoleId, setSiteBudget, shareReport, signOut, sites, updateMeeting, updateNotificationStatus, updateTask, updateTeamMember, whatsappMeetingReminder, whatsappTaskReminder, workspace.decisions, workspace.expenses, workspace.integrationSettings, workspace.meetings, workspace.notificationLogs, workspace.siteBudgets, workspace.tasks, workspace.teamMembers],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

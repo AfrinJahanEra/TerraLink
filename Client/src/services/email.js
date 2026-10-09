@@ -5,6 +5,8 @@ const templateIds = {
   over_budget: import.meta.env.VITE_EMAILJS_TEMPLATE_OVER_BUDGET_ID,
   task_complete: import.meta.env.VITE_EMAILJS_TEMPLATE_TASK_COMPLETE_ID,
   report_summary: import.meta.env.VITE_EMAILJS_TEMPLATE_REPORT_SUMMARY_ID,
+  meeting_invite: import.meta.env.VITE_EMAILJS_TEMPLATE_MEETING_INVITE_ID,
+  task_reminder: import.meta.env.VITE_EMAILJS_TEMPLATE_TASK_REMINDER_ID,
 }
 
 export function getEmailConfiguration() {
@@ -35,6 +37,7 @@ export async function sendEmailNotification({
   task,
   site,
   actionUrl,
+  extraParams = {},
 }) {
   const config = getEmailConfiguration()
   if (!config.configured) {
@@ -61,6 +64,7 @@ export async function sendEmailNotification({
       due_date: task?.dueDate ?? '',
       action_url: actionUrl ?? '',
       reply_to: import.meta.env.VITE_EMAILJS_REPLY_TO?.trim() || toEmail,
+      ...extraParams,
     },
     { publicKey: config.publicKey },
   )
@@ -102,6 +106,28 @@ export const emailTemplates = {
       type: 'report_summary',
       subject: details.subject ?? 'TerraLink report summary',
       message: details.message ?? 'Your TerraLink monitoring summary is ready for review.',
+      ...details,
+    })
+  },
+  meetingInvite(details) {
+    return sendEmailNotification({
+      type: 'meeting_invite',
+      subject: `Invitation: ${details.meeting.title} · ${details.meeting.date} ${details.meeting.startTime}`,
+      extraParams: {
+        meeting_id: details.meeting.id,
+        meeting_title: details.meeting.title,
+        meeting_date: details.meeting.date,
+        meeting_time: details.meeting.startTime,
+        meeting_location: details.meeting.location,
+      },
+      ...details,
+    })
+  },
+  taskReminder(details) {
+    return sendEmailNotification({
+      type: 'task_reminder',
+      subject: `Reminder: ${details.task.id} is due ${details.task.dueDate}`,
+      message: `This is a reminder that “${details.task.title}” for ${details.task.site} is due on ${details.task.dueDate}. Please add a progress note or report completion in TerraLink.`,
       ...details,
     })
   },

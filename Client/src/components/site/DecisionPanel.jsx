@@ -1,12 +1,13 @@
-import { Check, ClipboardPlus, ShieldCheck } from 'lucide-react'
+import { CalendarPlus, Check, ClipboardPlus, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { SITE_STATUS } from '../../constants/status'
 import { Button } from '../ui/Button'
 import { cn } from '../../utils/cn'
 
 const decisionOptions = ['needs_review', 'confirmed', 'inconclusive']
 
-export function DecisionPanel({ site, existingDecision, onSave, onCreateTask }) {
+export function DecisionPanel({ site, existingDecision, onSave, onCreateTask, scheduleVisitLink }) {
   const savedStatus = existingDecision?.status ?? site.status
   const initialStatus = decisionOptions.includes(savedStatus) ? savedStatus : 'needs_review'
   const [status, setStatus] = useState(initialStatus)
@@ -61,6 +62,7 @@ export function DecisionPanel({ site, existingDecision, onSave, onCreateTask }) 
           <Button type="submit" className="flex-1">Save decision <Check size={15} /></Button>
           <Button type="button" variant="secondary" onClick={onCreateTask} className="flex-1"><ClipboardPlus size={15} className="text-slate-600" />Create review task</Button>
         </div>
+        {scheduleVisitLink && <Button as={Link} to={scheduleVisitLink} variant="ghost" className="mt-2 w-full"><CalendarPlus size={15} className="text-slate-600" />Schedule field verification visit</Button>}
       </form>
 
       {existingDecision && (

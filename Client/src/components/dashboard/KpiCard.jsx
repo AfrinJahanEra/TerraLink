@@ -14,7 +14,7 @@ export function KpiCard({ icon: Icon, label, value, trend, trendLabel, to }) {
         <span className="grid size-10 place-items-center rounded-xl bg-slate-100 text-slate-600"><Icon size={19} strokeWidth={1.8} /></span>
       </div>
       <div className="mt-4 flex items-center gap-1.5 text-[11px]">
-        <span className={cn('inline-flex items-center gap-0.5 font-semibold', positive ? 'text-emerald-600' : 'text-rose-600')}>
+        <span className={cn('inline-flex items-center gap-0.5 font-semibold', positive ? 'text-slate-700' : 'text-rose-600')}>
           {positive ? <ArrowUpRight size={13} className="text-slate-500" /> : <ArrowDownRight size={13} className="text-slate-500" />}{Math.abs(trend)}%
         </span>
         <span className="text-slate-400">{trendLabel}</span>

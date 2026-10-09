@@ -1,18 +1,21 @@
 import { cn } from '../../utils/cn'
 
-const tones = {
-  brand: 'bg-brand-50 text-brand-700 ring-brand-200',
-  amber: 'bg-amber-50 text-amber-700 ring-amber-200',
-  emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  rose: 'bg-rose-50 text-rose-700 ring-rose-200',
-  violet: 'bg-violet-50 text-violet-700 ring-violet-200',
-  sky: 'bg-sky-50 text-sky-700 ring-sky-200',
-  slate: 'bg-slate-100 text-slate-600 ring-slate-200',
+/* Neutral pill; the tone only colours a small status dot to keep the interface calm. */
+const dots = {
+  brand: 'bg-brand-600',
+  amber: 'bg-amber-500',
+  emerald: 'bg-emerald-500',
+  rose: 'bg-rose-500',
+  violet: 'bg-slate-400',
+  sky: 'bg-sky-500',
+  slate: null,
 }
 
 export function Badge({ tone = 'slate', children, className }) {
+  const dot = dots[tone]
   return (
-    <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset', tones[tone], className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200', className)}>
+      {dot && <span aria-hidden="true" className={cn('size-1.5 shrink-0 rounded-full', dot)} />}
       {children}
     </span>
   )

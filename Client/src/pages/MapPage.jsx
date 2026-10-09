@@ -17,11 +17,11 @@ import { cn } from '../utils/cn'
 
 const filters = [
   { id: 'all', label: 'All sites', activeClass: 'border-slate-700 bg-slate-800 text-white', dot: 'bg-slate-500' },
-  { id: 'needs_review', label: 'Needs review', activeClass: 'border-amber-300 bg-amber-50 text-amber-800', dot: 'bg-amber-500' },
-  { id: 'confirmed', label: 'Confirmed', activeClass: 'border-rose-300 bg-rose-50 text-rose-800', dot: 'bg-rose-500' },
-  { id: 'inconclusive', label: 'Inconclusive', activeClass: 'border-slate-400 bg-slate-100 text-slate-800', dot: 'bg-slate-500' },
-  { id: 'no_change', label: 'No change', activeClass: 'border-emerald-300 bg-emerald-50 text-emerald-800', dot: 'bg-emerald-500' },
-  { id: 'insufficient_data', label: 'Insufficient data', activeClass: 'border-violet-300 bg-violet-50 text-violet-800', dot: 'bg-violet-500' },
+  { id: 'needs_review', label: 'Needs review', activeClass: 'border-slate-400 bg-slate-100 text-slate-900', dot: 'bg-amber-500' },
+  { id: 'confirmed', label: 'Confirmed', activeClass: 'border-slate-400 bg-slate-100 text-slate-900', dot: 'bg-rose-500' },
+  { id: 'inconclusive', label: 'Inconclusive', activeClass: 'border-slate-400 bg-slate-100 text-slate-900', dot: 'bg-slate-500' },
+  { id: 'no_change', label: 'No change', activeClass: 'border-slate-400 bg-slate-100 text-slate-900', dot: 'bg-emerald-500' },
+  { id: 'insufficient_data', label: 'Insufficient data', activeClass: 'border-slate-400 bg-slate-100 text-slate-900', dot: 'bg-slate-400' },
 ]
 
 function SiteDirectory({ sites, allSites, selectedId, query, status, onQueryChange, onStatusChange, onSelectSite }) {
@@ -128,8 +128,7 @@ export function MapPage() {
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Monitoring network</p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Wetland map</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Explore five illustrative monitoring sites, inspect their latest status, and open the connected site record.</p>
+          <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">Explore five illustrative monitoring sites, inspect their latest status, and open the connected site record.</p>
         </div>
         <button type="button" onClick={() => setDirectoryOpen((open) => !open)} className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-card transition hover:border-slate-300 hover:bg-slate-50 sm:self-auto">
           {directoryOpen ? <PanelLeftClose size={16} className="text-slate-500" /> : <PanelLeftOpen size={16} className="text-slate-500" />}

@@ -17,11 +17,11 @@ import { Link } from 'react-router-dom'
 import { ActivityTimeline } from '../components/dashboard/ActivityTimeline'
 import { AssistantPrompt } from '../components/dashboard/AssistantPrompt'
 import { BudgetCard, MonitoringTrend } from '../components/dashboard/InsightsPanel'
-import { IntegrationStrip } from '../components/dashboard/IntegrationStrip'
 import { KpiCard } from '../components/dashboard/KpiCard'
 import { MapPreview } from '../components/dashboard/MapPreview'
 import { SiteSnapshot } from '../components/dashboard/SiteSnapshot'
 import { TaskList } from '../components/dashboard/TaskList'
+import { UpcomingSchedule } from '../components/dashboard/UpcomingSchedule'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import {
@@ -31,9 +31,6 @@ import {
 import { SITE_STATUS } from '../constants/status'
 import { useApp } from '../hooks/useApp'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import { getGoogleCalendarConfiguration } from '../services/calendar'
-import { getEmailConfiguration } from '../services/email'
-import { normalizeWhatsAppNumber } from '../services/whatsapp'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -62,7 +59,6 @@ const roleViews = {
     actionLabel: 'Review finding',
     actionTo: '/sites/pond-a',
     priorityTitle: 'Priority review',
-    showIntegrations: true,
   },
   coordinator: {
     scope: 'Assigned field operations',
@@ -76,7 +72,6 @@ const roleViews = {
     priorityTitle: 'Next field check',
     siteIds: ['pond-a', 'pond-b', 'lake-d'],
     taskAssignee: 'Rahim Uddin',
-    showIntegrations: false,
   },
   operator: {
     scope: 'Records and reporting access',
@@ -86,9 +81,8 @@ const roleViews = {
     budgetTitle: 'Expense records',
     budgetSubtitle: 'Planned and recorded project spending',
     actionLabel: 'Update record',
-    actionTo: '/tasks',
+    actionTo: '/reviews',
     priorityTitle: 'Record requiring action',
-    showIntegrations: false,
   },
 }
 
@@ -99,17 +93,17 @@ function buildKpis(roleId, needsReview, visibleSites, visibleTasks) {
     { label: 'Assigned sites', value: visibleSites.length, trend: 12, trendLabel: 'this month', icon: MapPinned, to: '/map' },
     { label: 'My open tasks', value: openTasks.length, trend: -20, trendLabel: 'vs. last week', icon: ClipboardCheck, to: '/tasks' },
     { label: 'Due today', value: openTasks.filter((task) => task.due === 'Today').length, trend: 0, trendLabel: 'requires attention', icon: FileClock, to: '/tasks' },
-    { label: 'Costs recorded', value: '৳4.2k', trend: 8, trendLabel: 'this month', icon: ReceiptText, to: '/budget' },
+    { label: 'Costs recorded', value: '৳4.2k', trend: 8, trendLabel: 'this month', icon: ReceiptText, to: '/expenses' },
   ]
   if (roleId === 'operator') return [
-    { label: 'Site records', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Files, to: '/map' },
-    { label: 'Review queue', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/tasks' },
+    { label: 'Site records', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Files, to: '/sites' },
+    { label: 'Review queue', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/reviews' },
     { label: 'Open tasks', value: openTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
     { label: 'Reports ready', value: 3, trend: 50, trendLabel: 'this month', icon: FileClock, to: '/reports' },
   ]
   return [
-    { label: 'Monitored sites', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Droplets, to: '/map' },
-    { label: 'Needs review', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/tasks' },
+    { label: 'Monitored sites', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Droplets, to: '/sites' },
+    { label: 'Needs review', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/reviews' },
     { label: 'Open tasks', value: openTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
     { label: 'Budget spent', value: '৳18.2k', trend: 7.8, trendLabel: 'this month', icon: WalletCards, to: '/budget' },
   ]
@@ -130,8 +124,8 @@ function PriorityObservation({ site, view }) {
   const requiresReview = site.status === 'needs_review'
 
   return (
-    <section className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-card">
-      <div className="flex flex-col gap-4 border-b border-amber-100 bg-amber-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+      <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><CircleAlert size={18} /></span>
           <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold text-slate-900">{requiresReview ? view.priorityTitle : 'Latest monitored site'}</h2><Badge tone={status.tone}>{status.label}</Badge></div><p className="mt-0.5 text-xs text-slate-500">{requiresReview ? 'A possible water-area change needs human verification.' : 'The latest manager decision is reflected across the workspace.'}</p></div>
@@ -154,7 +148,7 @@ function PriorityObservation({ site, view }) {
           <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/60 py-3">
             <div className="px-3"><p className="text-[10px] text-slate-400">Earlier</p><p className="mt-1 text-base font-bold text-slate-800">12.0 ha</p></div>
             <div className="px-3"><p className="text-[10px] text-slate-400">Later</p><p className="mt-1 text-base font-bold text-slate-800">9.5 ha</p></div>
-            <div className="px-3"><p className="text-[10px] text-slate-400">Change</p><p className="mt-1 text-base font-bold text-rose-600">−20.8%</p></div>
+            <div className="px-3"><p className="text-[10px] text-slate-400">Change</p><p className="mt-1 text-base font-bold text-slate-900">−20.8%</p></div>
           </div>
           <p className="mt-4 text-xs leading-5 text-slate-500"><strong className="font-semibold text-slate-700">Review context:</strong> 86% clear-pixel coverage. This is a reason to investigate—not proof of encroachment or permanent wetland loss.</p>
         </div>
@@ -164,30 +158,23 @@ function PriorityObservation({ site, view }) {
 }
 
 export function DashboardPage() {
-  const { role, sites, tasks, teamMembers, budgetSummary } = useApp()
+  const { role, sites, tasks, meetings, teamMembers, budgetSummary } = useApp()
   const [chartRange, setChartRange] = useState('7 days')
   const [overviewRange, setOverviewRange] = useState('Last 30 days')
   const [activities, setActivities] = useLocalStorage('terralink.dashboard.activities', dashboardActivities)
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [lastUpdated, setLastUpdated] = useState('Just now')
 
-  const integrationStatuses = useMemo(() => {
-    const email = getEmailConfiguration()
-    const calendar = getGoogleCalendarConfiguration()
-    const manager = teamMembers.find((member) => member.id === 'member-nusrat') ?? teamMembers[0]
-    const whatsappReady = Boolean(normalizeWhatsAppNumber(manager?.whatsapp))
-    return [
-      { id: 'email', name: 'Email', detail: email.configured ? 'EmailJS delivery connected' : 'EmailJS credentials required', state: email.configured ? 'ready' : 'pending' },
-      { id: 'calendar', name: 'Calendar', detail: calendar.connected ? 'Google Calendar connected' : calendar.configured ? 'Google sign-in required' : 'Google OAuth client required', state: calendar.connected ? 'ready' : 'pending' },
-      { id: 'whatsapp', name: 'WhatsApp', detail: whatsappReady ? 'Click-to-chat ready' : 'Manager number required', state: whatsappReady ? 'ready' : 'pending' },
-    ]
-  }, [teamMembers])
-
   const prioritySite = sites.find((site) => site.status === 'needs_review') ?? sites[0]
   const needsReview = sites.filter((site) => site.status === 'needs_review').length
   const view = roleViews[role.id]
   const visibleSites = view.siteIds ? sites.filter((site) => view.siteIds.includes(site.id)) : sites
   const visibleTasks = view.taskAssignee ? tasks.filter((task) => task.assignee === view.taskAssignee) : tasks
+  const memberId = teamMembers.find((member) => member.name === role.user.name)?.id
+  const visibleMeetings = useMemo(
+    () => role.id === 'coordinator' ? meetings.filter((meeting) => meeting.attendeeIds.includes(memberId)) : meetings,
+    [meetings, memberId, role.id],
+  )
   const kpis = useMemo(
     () => buildKpis(role.id, needsReview, visibleSites, visibleTasks),
     [role.id, needsReview, visibleSites, visibleTasks],
@@ -224,8 +211,6 @@ export function DashboardPage() {
 
       <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 shadow-card"><span>Showing {overviewRange.toLowerCase()} · {visibleSites.length} sample sites</span><span className="flex items-center gap-1.5 font-medium text-slate-600"><CircleCheck size={13} /> {lastUpdated}</span></div>
 
-      <IntegrationStrip integrations={integrationStatuses} canManage={view.showIntegrations} />
-
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.75fr)]">
         <div className="space-y-6">
           <PriorityObservation site={prioritySite} view={view} />
@@ -238,6 +223,7 @@ export function DashboardPage() {
         </div>
 
         <aside className="space-y-6">
+          <UpcomingSchedule meetings={visibleMeetings} tasks={visibleTasks} canSchedule={role.id !== 'coordinator'} />
           <ActivityTimeline
             activities={activities}
             expanded={showAllActivity}

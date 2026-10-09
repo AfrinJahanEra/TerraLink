@@ -1,12 +1,13 @@
 import { ChevronLeft, ChevronRight, LogOut, X } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
-import { getNavigationForRole } from '../../constants/navigation'
+import { NavLink, useLocation } from 'react-router-dom'
+import { getNavigationForRole, isNavItemActive } from '../../constants/navigation'
 import { useApp } from '../../hooks/useApp'
 import { cn } from '../../utils/cn'
 import { Logo } from '../brand/Logo'
 
 export function Sidebar({ collapsed, mobileOpen, onCollapse, onClose }) {
   const { role } = useApp()
+  const { pathname } = useLocation()
   const navigation = getNavigationForRole(role.id)
 
   return (
@@ -22,67 +23,69 @@ export function Sidebar({ collapsed, mobileOpen, onCollapse, onClose }) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white transition-all duration-200 lg:translate-x-0',
-          collapsed ? 'lg:w-[84px]' : 'lg:w-[260px]',
-          mobileOpen ? 'w-[280px] translate-x-0 shadow-pop' : 'w-[280px] -translate-x-full',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-brand-900 bg-brand-950 text-white transition-all duration-200 lg:translate-x-0',
+          collapsed ? 'lg:w-[72px]' : 'lg:w-[232px]',
+          mobileOpen ? 'w-[248px] translate-x-0 shadow-pop' : 'w-[248px] -translate-x-full',
         )}
       >
-        <div className={cn('flex h-[73px] items-center border-b border-slate-100', collapsed ? 'lg:justify-center lg:px-0' : 'px-6')}>
-          <Logo compact={collapsed} />
+        <div className={cn('flex h-16 shrink-0 items-center border-b border-white/10', collapsed ? 'lg:justify-center lg:px-0' : 'px-4')}>
+          <Logo compact={collapsed} inverse size="lg" />
           <button
             type="button"
             aria-label="Close navigation"
             onClick={onClose}
-            className="ml-auto rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden"
+            className="ml-auto rounded-lg p-1.5 text-brand-100 hover:bg-white/10 hover:text-white lg:hidden"
           >
-            <X size={19} />
+            <X size={17} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
+        <nav className="sidebar-scroll min-h-0 flex-1 overflow-y-auto px-2.5 pb-3 pt-10 [@media(max-height:760px)]:pt-6" aria-label="Primary navigation">
           {navigation.map((group) => (
-            <div key={group.label} className="mb-6 last:mb-0">
-              <p className={cn('mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400', collapsed && 'lg:text-center lg:text-[0px]')}>
-                {collapsed ? <span className="mx-auto block h-px w-5 bg-slate-200" /> : group.label}
+            <div key={group.label} className="sidebar-group">
+              <p className={cn('mb-1.5 px-2.5 text-[11px] font-bold uppercase leading-[14px] tracking-[0.12em] text-brand-300/80', collapsed && 'lg:text-center lg:text-[0px]')}>
+                {collapsed ? <span className="mx-auto block h-px w-5 bg-white/15" /> : group.label}
               </p>
-              <div className="space-y-1">
-                {group.items.map(({ label, path, icon: Icon }) => (
-                  <NavLink
-                    key={path}
-                    to={path}
-                    onClick={onClose}
-                    title={collapsed ? label : undefined}
-                    className={({ isActive }) => cn(
-                      'group flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
-                      collapsed && 'lg:justify-center lg:px-0',
-                      isActive
-                        ? 'bg-brand-50 text-brand-800'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-                    )}
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Icon size={19} strokeWidth={isActive ? 2.2 : 1.8} className={cn('shrink-0', isActive ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600')} />
-                        <span className={cn('truncate', collapsed && 'lg:hidden')}>{label}</span>
-                      </>
-                    )}
-                  </NavLink>
-                ))}
+              <div className="sidebar-items">
+                {group.items.map((item) => {
+                  const { label, path, icon: Icon } = item
+                  const isActive = isNavItemActive(item, pathname)
+                  return (
+                    <NavLink
+                      key={path}
+                      to={path}
+                      end
+                      onClick={onClose}
+                      title={collapsed ? label : undefined}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={cn(
+                        'sidebar-link group flex items-center gap-2.5 rounded-md px-2.5 text-[13.5px] font-medium transition-colors',
+                        collapsed && 'lg:h-8 lg:justify-center lg:px-0',
+                        isActive
+                          ? 'bg-white/12 text-white'
+                          : 'text-brand-100/80 hover:bg-white/[0.06] hover:text-white',
+                      )}
+                    >
+                      <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} className={cn('shrink-0', isActive ? 'text-white' : 'text-brand-200/70 group-hover:text-white')} />
+                      <span className={cn('truncate', collapsed && 'lg:hidden')}>{label}</span>
+                    </NavLink>
+                  )
+                })}
               </div>
             </div>
           ))}
         </nav>
 
-        <div className="border-t border-slate-100 p-3">
+        <div className="shrink-0 border-t border-white/10 px-2.5 py-1.5">
           <button
             type="button"
             onClick={onCollapse}
-            className="hidden h-10 w-full items-center justify-center gap-2 rounded-lg text-sm font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 lg:flex"
+            className="hidden h-8 w-full items-center justify-center gap-1.5 rounded-md text-[12px] font-medium text-brand-100/70 transition hover:bg-white/[0.06] hover:text-white lg:flex"
           >
-            {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /><span>Collapse sidebar</span></>}
+            {collapsed ? <ChevronRight size={15} /> : <><ChevronLeft size={15} /><span>Collapse sidebar</span></>}
           </button>
-          <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 lg:hidden">
-            <LogOut size={15} /> Navigation closes after selection
+          <div className="flex items-center gap-2 px-2.5 py-1 text-[11px] text-brand-100/60 lg:hidden">
+            <LogOut size={13} /> Navigation closes after selection
           </div>
         </div>
       </aside>

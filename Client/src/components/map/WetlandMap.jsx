@@ -16,7 +16,7 @@ const markerColors = {
   confirmed: '#e11d48',
   inconclusive: '#64748b',
   no_change: '#059669',
-  insufficient_data: '#7c3aed',
+  insufficient_data: '#94a3b8',
 }
 
 function MapViewport({ sites, selectedSite }) {

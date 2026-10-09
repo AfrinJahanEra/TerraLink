@@ -27,14 +27,14 @@ export function MonitoringTrend({ data, range, onRangeChange }) {
         <svg viewBox="0 0 400 180" role="img" aria-label={`Line chart showing ${range} of reviews and tasks`} className="size-full overflow-visible">
           {[30, 70, 110, 150].map((y) => <line key={y} x1="0" x2="400" y1={y} y2={y} stroke="#eef2f6" strokeDasharray="4 4" />)}
           <polyline points={reviews} fill="none" stroke="#20787d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          <polyline points={tasks} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points={tasks} fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round" />
           {data.map((item, index) => {
             const x = data.length === 1 ? 200 : (index / (data.length - 1)) * 400
             return <text key={item.date} x={x} y="177" textAnchor={index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'} fill="#94a3b8" fontSize="10">{item.date}</text>
           })}
         </svg>
       </div>
-      <div className="mt-2 flex items-center justify-center gap-5 text-[10px] text-slate-500"><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-brand-600" />Reviews</span><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-violet-500" />Tasks</span></div>
+      <div className="mt-2 flex items-center justify-center gap-5 text-[10px] text-slate-500"><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-brand-600" />Reviews</span><span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-slate-400" />Tasks</span></div>
     </section>
   )
 }
@@ -62,7 +62,7 @@ export function BudgetCard({ budget, title = 'Budget overview', subtitle = 'Curr
         <div className="min-w-0 flex-1 space-y-2.5 text-xs">
           <div className="flex justify-between gap-3"><span className="flex items-center gap-2 text-slate-500"><span className={overBudget ? 'size-2 rounded-full bg-rose-500' : 'size-2 rounded-full bg-brand-600'} />Spent</span><span className="font-semibold text-slate-800">{formatBdt(budget.spent)}</span></div>
           <div className="flex justify-between gap-3"><span className="flex items-center gap-2 text-slate-500"><span className="size-2 rounded-full bg-amber-500" />Pending</span><span className="font-semibold text-slate-800">{formatBdt(budget.pending)}</span></div>
-          <div className="flex justify-between gap-3 border-t border-slate-100 pt-2.5"><span className="flex items-center gap-2 text-slate-500">{overBudget ? <AlertTriangle size={14} className="text-slate-600" /> : <CircleDollarSign size={14} />}Remaining</span><span className={overBudget ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{formatBdt(remaining)}</span></div>
+          <div className="flex justify-between gap-3 border-t border-slate-100 pt-2.5"><span className="flex items-center gap-2 text-slate-500">{overBudget ? <AlertTriangle size={14} className="text-slate-600" /> : <CircleDollarSign size={14} />}Remaining</span><span className={overBudget ? 'font-semibold text-rose-700' : 'font-semibold text-slate-800'}>{formatBdt(remaining)}</span></div>
         </div>
       </div>
     </section>

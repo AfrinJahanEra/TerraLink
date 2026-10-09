@@ -41,33 +41,33 @@ export function Topbar({ title, onOpenMenu }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-[73px] items-center border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-7">
+    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-slate-200 bg-white/95 px-4 backdrop-blur md:px-6">
       <button type="button" onClick={onOpenMenu} aria-label="Open navigation" className="mr-3 rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden">
         <Menu size={21} />
       </button>
 
       <div className="min-w-0">
-        <p className="text-[11px] font-medium text-slate-400">TerraLink / Workspace</p>
-        <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900">{title}</h1>
+        <p className="text-[11px] font-medium leading-4 text-slate-400">TerraLink / Workspace</p>
+        <h1 className="truncate text-xl font-bold tracking-tight text-slate-900">{title}</h1>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
-        <button type="button" className="hidden h-10 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400 transition hover:border-slate-300 md:flex">
+        <button type="button" className="hidden h-9 w-52 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400 transition hover:border-slate-300 md:flex">
           <Search size={17} /> Search workspace
           <kbd className="ml-auto rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-400">⌘K</kbd>
         </button>
 
-        <button type="button" onClick={() => setAboutOpen(true)} aria-label="About and help" title="About and help" className="grid size-10 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+        <button type="button" onClick={() => setAboutOpen(true)} aria-label="About and help" title="About and help" className="grid size-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
           <CircleHelp size={19} />
         </button>
 
         <div className="relative" ref={noticeRef}>
-          <button type="button" onClick={() => setNoticeOpen((open) => !open)} aria-label="Notifications" className="relative grid size-10 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100">
+          <button type="button" onClick={() => setNoticeOpen((open) => !open)} aria-label="Notifications" className="relative grid size-9 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100">
             <Bell size={19} />
             <span className="absolute right-2 top-2 size-2 rounded-full border-2 border-white bg-amber-500" />
           </button>
           {noticeOpen && (
-            <div className="absolute right-0 top-12 w-[min(340px,calc(100vw-2rem))] animate-fade-in rounded-xl border border-slate-200 bg-white p-4 shadow-pop">
+            <div className="absolute right-0 top-11 w-[min(340px,calc(100vw-2rem))] animate-fade-in rounded-xl border border-slate-200 bg-white p-4 shadow-pop">
               <div className="flex items-center justify-between"><h2 className="text-sm font-semibold text-slate-900">Notifications</h2><span className="text-xs text-brand-700">1 new</span></div>
               <div className="mt-3 border-t border-slate-100 pt-3">
                 <p className="text-sm font-medium text-slate-800">{notice.title}</p>
@@ -78,7 +78,7 @@ export function Topbar({ title, onOpenMenu }) {
         </div>
 
         <div className="relative" ref={roleRef}>
-          <button type="button" onClick={() => setRoleOpen((open) => !open)} className="flex h-11 items-center gap-2 rounded-lg px-1.5 transition hover:bg-slate-50 sm:pr-2">
+          <button type="button" onClick={() => setRoleOpen((open) => !open)} className="flex h-10 items-center gap-2 rounded-lg px-1.5 transition hover:bg-slate-50 sm:pr-2">
             <span className="grid size-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-800">{initials}</span>
             <span className="hidden text-left sm:block">
               <span className="block max-w-28 truncate text-xs font-semibold text-slate-800">{role.user.name}</span>
@@ -88,7 +88,7 @@ export function Topbar({ title, onOpenMenu }) {
           </button>
 
           {roleOpen && (
-            <div className="absolute right-0 top-13 w-64 animate-fade-in rounded-xl border border-slate-200 bg-white p-2 shadow-pop">
+            <div className="absolute right-0 top-12 w-64 animate-fade-in rounded-xl border border-slate-200 bg-white p-2 shadow-pop">
               <p className="px-2 pb-2 pt-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Preview as</p>
               {ROLE_LIST.map((item) => (
                 <button key={item.id} type="button" onClick={() => { selectRole(item.id); setRoleOpen(false) }} className="flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-slate-50">

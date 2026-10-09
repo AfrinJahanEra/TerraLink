@@ -1,12 +1,16 @@
 import {
   CalendarDays,
+  CalendarPlus,
   Check,
   CircleDollarSign,
   Clock3,
+  Download,
   Mail,
   MapPin,
   MessageCircle,
   MessageSquareText,
+  Radio,
+  ReceiptText,
   Send,
   UserRound,
   X,
@@ -14,8 +18,30 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TASK_STATUS, TASK_STATUS_ORDER } from '../../constants/status'
+import { buildScheduleLink } from '../../utils/schedule'
+import { CommunicationHistory } from '../communications/CommunicationHistory'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
+
+const actionClass = 'flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-left text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50'
+
+function ActionButton({ icon: Icon, children, onClick, disabled }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={actionClass}>
+      <Icon size={15} className="shrink-0 text-slate-500" />
+      <span className="truncate">{children}</span>
+    </button>
+  )
+}
+
+function ActionLink({ icon: Icon, to, children }) {
+  return (
+    <Link to={to} className={actionClass}>
+      <Icon size={15} className="shrink-0 text-slate-500" />
+      <span className="truncate">{children}</span>
+    </Link>
+  )
+}
 
 function allowedStatuses(role, task) {
   if (role.id === 'manager') return TASK_STATUS_ORDER
@@ -25,7 +51,7 @@ function allowedStatuses(role, task) {
   return [task.status]
 }
 
-export function TaskDetailDrawer({ task, role, members, onClose, onUpdate, onAddComment }) {
+export function TaskDetailDrawer({ task, role, members, logs = [], onClose, onUpdate, onAddComment, onAddToCalendar, onDownloadIcs, onEmailReminder, onWhatsAppReminder }) {
   const [status, setStatus] = useState(task.status)
   const [assignee, setAssignee] = useState(task.assignee)
   const [dueDate, setDueDate] = useState(task.dueDate)
@@ -34,11 +60,23 @@ export function TaskDetailDrawer({ task, role, members, onClose, onUpdate, onAdd
   const [notifications, setNotifications] = useState(task.notifications)
   const [comment, setComment] = useState('')
   const [saved, setSaved] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
   const canManageRecord = role.id === 'manager' || role.id === 'operator'
   const canAssign = role.id === 'manager'
   const canUpdateProgress = role.id === 'manager' || (role.id === 'coordinator' && task.assignee === role.user.name)
   const canComment = role.id !== 'coordinator' || task.assignee === role.user.name
   const statusOptions = useMemo(() => allowedStatuses(role, task), [role, task])
+  const isOpen = task.status !== 'reported_complete'
+  const canUseCalendar = canManageRecord || task.assignee === role.user.name
+
+  async function sendEmailReminder() {
+    setSendingEmail(true)
+    try {
+      await onEmailReminder()
+    } finally {
+      setSendingEmail(false)
+    }
+  }
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -97,6 +135,21 @@ export function TaskDetailDrawer({ task, role, members, onClose, onUpdate, onAdd
             {(canManageRecord || canUpdateProgress) && <Button type="submit" className="w-full">Save task changes <Check size={15} /></Button>}
           </form>
 
+          {(canUseCalendar || canManageRecord) && (
+            <section className="mt-6 border-t border-slate-100 pt-5">
+              <h3 className="text-xs font-semibold text-slate-800">Follow-up actions</h3>
+              <p className="mt-1 text-[11px] leading-5 text-slate-500">Put the deadline on a calendar, remind {task.assignee}, or plan the related field work.</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {canUseCalendar && onAddToCalendar && <ActionButton icon={CalendarDays} onClick={onAddToCalendar}>Add deadline to Google Calendar</ActionButton>}
+                {canUseCalendar && onDownloadIcs && <ActionButton icon={Download} onClick={onDownloadIcs}>Download deadline .ics</ActionButton>}
+                {canManageRecord && onEmailReminder && <ActionButton icon={Mail} onClick={sendEmailReminder} disabled={sendingEmail || !isOpen}>{sendingEmail ? 'Sending reminder…' : 'Email reminder to assignee'}</ActionButton>}
+                {canManageRecord && onWhatsAppReminder && <ActionButton icon={MessageCircle} onClick={onWhatsAppReminder} disabled={!isOpen}>WhatsApp reminder</ActionButton>}
+                {canManageRecord && <ActionLink icon={CalendarPlus} to={buildScheduleLink({ new: 'field_visit', site: task.siteId, task: task.id, title: `${task.site} field visit · ${task.id}` })}>Schedule field visit</ActionLink>}
+                {canManageRecord && <ActionLink icon={ReceiptText} to={`/expenses?new=1&task=${task.id}`}>Record an expense</ActionLink>}
+              </div>
+            </section>
+          )}
+
           <section className="mt-6 border-t border-slate-100 pt-5">
             <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-800"><MessageSquareText size={15} className="text-slate-500" />Inspection notes and comments</h3>
             {canComment && <form onSubmit={submitComment} className="mt-3 flex gap-2"><input value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Add a concise progress note" className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /><button type="submit" disabled={!comment.trim()} aria-label="Add comment" className="grid size-10 place-items-center rounded-lg bg-slate-800 text-white transition hover:bg-slate-900 disabled:opacity-40"><Send size={15} /></button></form>}
@@ -109,6 +162,11 @@ export function TaskDetailDrawer({ task, role, members, onClose, onUpdate, onAdd
           <section className="mt-6 border-t border-slate-100 pt-5">
             <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-800"><Clock3 size={15} className="text-slate-500" />Activity history</h3>
             <div className="mt-3 space-y-3">{task.activityHistory.map((item) => <div key={item.id} className="flex gap-3"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-slate-400" /><div><p className="text-xs text-slate-600">{item.action}</p><p className="mt-0.5 text-[10px] text-slate-400">{item.actor} · {item.time}</p></div></div>)}</div>
+          </section>
+
+          <section className="mt-6 border-t border-slate-100 pt-5">
+            <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-800"><Radio size={15} className="text-slate-500" />Communications</h3>
+            <CommunicationHistory logs={logs} emptyText="No emails, calendar events, or WhatsApp messages have been recorded for this task." />
           </section>
         </div>
       </aside>

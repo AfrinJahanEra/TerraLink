@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react'
 import { formatBdtBangla } from '../../utils/currency'
 import { Button } from '../ui/Button'
 
-export function ExpenseFormModal({ open, tasks, onClose, onCreate }) {
+export function ExpenseFormModal({ open, tasks, initialTaskId, onClose, onCreate }) {
   const [date, setDate] = useState('2026-10-09')
   const [amount, setAmount] = useState('4200')
   const [description, setDescription] = useState('Field visit transport and supplies')
-  const [taskId, setTaskId] = useState(tasks[0]?.id ?? '')
+  const [taskId, setTaskId] = useState(tasks.some((task) => task.id === initialTaskId) ? initialTaskId : tasks[0]?.id ?? '')
   const [receiptNote, setReceiptNote] = useState('Receipt retained with the field visit record.')
 
   useEffect(() => {

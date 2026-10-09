@@ -140,9 +140,3 @@ export const budgetSummary = {
   spent: 18200,
   pending: 5300,
 }
-
-export const integrationStatus = [
-  { id: 'email', name: 'Email', detail: 'EmailJS delivery ready', state: 'ready' },
-  { id: 'calendar', name: 'Calendar', detail: 'Google Calendar setup pending', state: 'pending' },
-  { id: 'whatsapp', name: 'WhatsApp', detail: 'Click-to-chat ready', state: 'ready' },
-]

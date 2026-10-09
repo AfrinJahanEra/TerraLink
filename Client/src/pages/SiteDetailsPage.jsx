@@ -1,11 +1,10 @@
 import {
   ArrowLeft,
+  CalendarPlus,
   CalendarRange,
-  Check,
   ClipboardCheck,
   Database,
   MapPin,
-  RotateCcw,
   ShieldCheck,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -16,12 +15,15 @@ import { ImageComparison } from '../components/site/ImageComparison'
 import { TaskCreationModal } from '../components/site/TaskCreationModal'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { Toast } from '../components/ui/Toast'
 import { SITE_STATUS } from '../constants/status'
 import { analysisSources, getSiteComparisons } from '../data/siteAnalysis'
 import { useApp } from '../hooks/useApp'
+import { useNotice } from '../hooks/useNotice'
+import { buildScheduleLink } from '../utils/schedule'
 import { createActivity, formatTaskDate } from '../utils/tasks'
 
-function ReadOnlyReview({ role, decision }) {
+function ReadOnlyReview({ role, decision, siteId, scheduleVisitLink }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
       <div className="flex items-start gap-3">
@@ -33,7 +35,8 @@ function ReadOnlyReview({ role, decision }) {
       ) : (
         <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500">No manager decision has been recorded for this site.</p>
       )}
-      <Button as={Link} to="/tasks" variant="secondary" className="mt-4 w-full"><ClipboardCheck size={15} className="text-slate-600" />Open task workspace</Button>
+      <Button as={Link} to={`/tasks?site=${siteId}`} variant="secondary" className="mt-4 w-full"><ClipboardCheck size={15} className="text-slate-600" />Open task workspace</Button>
+      {scheduleVisitLink && <Button as={Link} to={scheduleVisitLink} variant="ghost" className="mt-2 w-full"><CalendarPlus size={15} className="text-slate-600" />Schedule field verification visit</Button>}
     </section>
   )
 }
@@ -55,12 +58,12 @@ function SourcePanel({ site, comparison }) {
 
 export function SiteDetailsPage() {
   const { siteId } = useParams()
-  const { role, sites, tasks, teamMembers, decisions, recordDecision, createTask, resetDemo } = useApp()
+  const { role, sites, tasks, teamMembers, decisions, recordDecision, createTask } = useApp()
   const site = sites.find((item) => item.id === siteId)
   const comparisons = useMemo(() => site ? getSiteComparisons(site) : [], [site])
   const [periodId, setPeriodId] = useState('2021-2024')
   const [taskOpen, setTaskOpen] = useState(false)
-  const [notice, setNotice] = useState('')
+  const [notice, showNotice] = useNotice(3000)
   const comparison = comparisons.find((item) => item.id === periodId) ?? comparisons[0]
 
   if (!site) {
@@ -71,11 +74,8 @@ export function SiteDetailsPage() {
 
   const status = SITE_STATUS[site.status]
   const existingDecision = decisions[site.id]
-
-  function showNotice(message) {
-    setNotice(message)
-    window.setTimeout(() => setNotice(''), 2600)
-  }
+  const canSchedule = role.id === 'manager' || role.id === 'operator'
+  const scheduleVisitLink = canSchedule ? buildScheduleLink({ new: 'field_visit', site: site.id, title: `${site.name} field verification visit` }) : ''
 
   function handleDecision({ status: outcome, note }) {
     const now = new Date()
@@ -113,12 +113,6 @@ export function SiteDetailsPage() {
     showNotice(`${taskId} created and added to the task list.`)
   }
 
-  function handleReset() {
-    if (!window.confirm('Reset all saved review decisions and created demo tasks?')) return
-    resetDemo()
-    showNotice('Demo review data has been reset.')
-  }
-
   return (
     <div className="animate-fade-in space-y-6 pb-8">
       <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
@@ -130,7 +124,6 @@ export function SiteDetailsPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative flex items-center"><CalendarRange size={15} className="pointer-events-none absolute left-3 text-slate-500" /><select value={periodId} onChange={(event) => setPeriodId(event.target.value)} aria-label="Comparison period" className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-xs font-semibold text-slate-700 shadow-card outline-none focus:border-brand-400">{comparisons.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-          {role.id === 'manager' && <Button type="button" variant="secondary" onClick={handleReset}><RotateCcw size={15} className="text-slate-600" />Reset demo</Button>}
         </div>
       </header>
 
@@ -147,15 +140,15 @@ export function SiteDetailsPage() {
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)]">
         <SourcePanel site={site} comparison={comparison} />
         {role.id === 'manager' ? (
-          <DecisionPanel key={site.id} site={site} existingDecision={existingDecision} onSave={handleDecision} onCreateTask={() => setTaskOpen(true)} />
+          <DecisionPanel key={site.id} site={site} existingDecision={existingDecision} onSave={handleDecision} onCreateTask={() => setTaskOpen(true)} scheduleVisitLink={scheduleVisitLink} />
         ) : (
-          <ReadOnlyReview role={role} decision={existingDecision} />
+          <ReadOnlyReview role={role} decision={existingDecision} siteId={site.id} scheduleVisitLink={scheduleVisitLink} />
         )}
       </div>
 
       <TaskCreationModal open={taskOpen} site={site} members={teamMembers} onClose={() => setTaskOpen(false)} onCreate={handleCreateTask} />
 
-      {notice && <div role="status" className="fixed bottom-5 right-5 z-[1100] flex max-w-sm items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-pop"><Check size={15} className="text-slate-600" />{notice}</div>}
+      <Toast message={notice} />
     </div>
   )
 }

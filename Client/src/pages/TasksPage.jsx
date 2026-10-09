@@ -1,11 +1,11 @@
 import {
-  AlertTriangle,
   ArrowRight,
-  Check,
+  CalendarDays,
   ClipboardCheck,
   LayoutGrid,
   List,
   Plus,
+  ScanSearch,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -14,48 +14,31 @@ import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer'
 import { TaskFilters } from '../components/tasks/TaskFilters'
 import { TaskFormModal } from '../components/tasks/TaskFormModal'
 import { Button } from '../components/ui/Button'
-import { SITE_STATUS } from '../constants/status'
+import { PageHeader } from '../components/ui/PageHeader'
+import { SummaryStrip } from '../components/ui/SummaryStrip'
+import { Toast } from '../components/ui/Toast'
 import { useApp } from '../hooks/useApp'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useNotice } from '../hooks/useNotice'
 import { cn } from '../utils/cn'
+import { describeCalendarResult, describeEmailResult, describeWhatsAppResult } from '../utils/communications'
 import { createActivity, formatTaskDate, isTaskOverdue } from '../utils/tasks'
 
 const emptyFilters = { search: '', site: 'all', status: 'all', assignee: 'all', overdue: false }
 
-function ObservationQueue({ sites, canCreate, onCreate }) {
-  const observations = sites.filter((site) => site.status === 'needs_review')
-
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-card">
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><div><h2 className="text-sm font-semibold text-slate-900">Observation queue</h2><p className="mt-0.5 text-xs text-slate-400">Findings awaiting a documented review decision</p></div><span className="text-xs font-semibold text-slate-500">{observations.length} pending</span></div>
-      {observations.length ? (
-        <div className="divide-y divide-slate-100">
-          {observations.map((site) => (
-            <div key={site.id} className="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center">
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><AlertTriangle size={17} /></span>
-              <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-slate-800">{site.name} · {site.location}</p><span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-semibold text-amber-700">{SITE_STATUS[site.status].label}</span></div><p className="mt-1 truncate text-[11px] text-slate-500">{site.reviewNote}</p></div>
-              <div className="flex items-center gap-2"><Link to={`/sites/${site.id}`} className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-[11px] font-semibold text-brand-700 hover:bg-brand-50">Review <ArrowRight size={13} className="text-slate-500" /></Link>{canCreate && <button type="button" onClick={() => onCreate(site.id)} className="h-9 rounded-lg border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">Create task</button>}</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="px-5 py-8 text-center text-xs text-slate-500">No observations currently require review.</p>
-      )}
-    </section>
-  )
-}
-
 export function TasksPage() {
-  const { role, sites, tasks, teamMembers, createTask, updateTask, addTaskComment } = useApp()
-  const [searchParams] = useSearchParams()
+  const {
+    role, sites, tasks, teamMembers, notificationLogs, createTask, updateTask, addTaskComment,
+    addTaskToCalendar, downloadTaskIcs, emailTaskReminder, whatsappTaskReminder,
+  } = useApp()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [view, setView] = useLocalStorage('terralink.tasks.view', 'board')
-  const [filters, setFilters] = useState(emptyFilters)
-  const [selectedTaskId, setSelectedTaskId] = useState(() => searchParams.get('task'))
-  const [createOpen, setCreateOpen] = useState(false)
-  const [initialSiteId, setInitialSiteId] = useState(null)
-  const [modalVersion, setModalVersion] = useState(0)
-  const [notice, setNotice] = useState('')
+  const [filters, setFilters] = useState(() => ({ ...emptyFilters, site: !searchParams.get('new') && searchParams.get('site') ? searchParams.get('site') : 'all' }))
+  const [notice, showNotice] = useNotice(3500)
   const canCreate = role.id === 'manager' || role.id === 'operator'
+  const selectedTaskId = searchParams.get('task')
+  const createOpen = canCreate && searchParams.get('new') === 'task'
+  const initialSiteId = searchParams.get('site')
 
   const roleTasks = useMemo(
     () => role.id === 'coordinator' ? tasks.filter((task) => task.assignee === role.user.name) : tasks,
@@ -74,19 +57,25 @@ export function TasksPage() {
   }, [filters, roleTasks])
 
   const selectedTask = roleTasks.find((task) => task.id === selectedTaskId) ?? null
+  const selectedLogs = useMemo(
+    () => selectedTask ? notificationLogs.filter((log) => log.taskId === selectedTask.id) : [],
+    [notificationLogs, selectedTask],
+  )
   const openCount = roleTasks.filter((task) => task.status !== 'reported_complete').length
   const overdueCount = roleTasks.filter(isTaskOverdue).length
   const completedCount = roleTasks.filter((task) => task.status === 'reported_complete').length
+  const reviewCount = sites.filter((site) => site.status === 'needs_review').length
 
-  function showNotice(message) {
-    setNotice(message)
-    window.setTimeout(() => setNotice(''), 2600)
+  function openTask(taskId) {
+    setSearchParams({ task: taskId })
   }
 
-  function openTaskForm(siteId = null) {
-    setInitialSiteId(siteId)
-    setModalVersion((version) => version + 1)
-    setCreateOpen(true)
+  function closePanel() {
+    setSearchParams({}, { replace: true })
+  }
+
+  function openTaskForm() {
+    setSearchParams({ new: 'task' })
   }
 
   function handleCreate(task) {
@@ -102,8 +91,8 @@ export function TasksPage() {
       comments: [],
       activityHistory: [createActivity('Task created and added to review queue', role.user.name)],
     })
-    setCreateOpen(false)
-    showNotice(`${id} created successfully.`)
+    setSearchParams({ task: id }, { replace: true })
+    showNotice(`${id} created. Use the follow-up actions to add the deadline to a calendar or remind the assignee.`)
   }
 
   function handleUpdate(changes) {
@@ -127,20 +116,36 @@ export function TasksPage() {
 
   return (
     <div className="animate-fade-in space-y-5 pb-8">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Operations workflow</p><h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Review & tasks</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Move observations through accountable review, assignment, field progress, and reported completion.</p></div>
-        {canCreate && <Button type="button" onClick={() => openTaskForm()}><Plus size={16} />Create task</Button>}
-      </header>
+      <PageHeader
+        eyebrow="Field operations"
+        title="Tasks"
+        description="Assign field work, track progress to reported completion, and follow up by calendar, email, or WhatsApp from each task."
+        actions={(
+          <>
+            <Link to="/schedule" className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-card hover:bg-slate-50"><CalendarDays size={15} className="text-slate-500" />Schedule</Link>
+            {canCreate && <Button type="button" onClick={openTaskForm}><Plus size={16} />Create task</Button>}
+          </>
+        )}
+      />
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-slate-200 py-3 text-xs text-slate-500">
-        <span><strong className="font-semibold text-slate-800">{roleTasks.length}</strong> visible tasks</span>
-        <span><strong className="font-semibold text-slate-800">{openCount}</strong> open</span>
-        <span><strong className="font-semibold text-rose-700">{overdueCount}</strong> overdue</span>
-        <span><strong className="font-semibold text-slate-800">{completedCount}</strong> completed</span>
-        <span className="ml-auto text-[10px] text-slate-400">{role.id === 'coordinator' ? 'Showing your assignments only' : 'Showing programme-wide tasks'}</span>
-      </div>
+      <SummaryStrip
+        items={[
+          { label: 'visible tasks', value: roleTasks.length },
+          { label: 'open', value: openCount },
+          { label: 'overdue', value: overdueCount, tone: overdueCount ? 'rose' : 'default' },
+          { label: 'completed', value: completedCount },
+        ]}
+        note={role.id === 'coordinator' ? 'Showing your assignments only' : 'Showing programme-wide tasks'}
+      />
 
-      <ObservationQueue sites={sites} canCreate={canCreate} onCreate={openTaskForm} />
+      {role.id !== 'coordinator' && reviewCount > 0 && (
+        <Link to="/reviews" className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3.5 shadow-card transition hover:border-slate-300">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><ScanSearch size={17} /></span>
+          <div className="min-w-0 flex-1"><p className="text-xs font-semibold text-slate-800">{reviewCount} {reviewCount === 1 ? 'observation is' : 'observations are'} awaiting a review decision</p><p className="mt-0.5 text-[11px] text-slate-500">Record decisions and create follow-up tasks from the review queue.</p></div>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-700">Open review queue <ArrowRight size={13} className="text-slate-500" /></span>
+        </Link>
+      )}
+
       <TaskFilters filters={filters} sites={sites} members={teamMembers} onChange={setFilters} onReset={() => setFilters(emptyFilters)} />
 
       <div className="flex items-center justify-between gap-3">
@@ -152,14 +157,29 @@ export function TasksPage() {
       </div>
 
       {filteredTasks.length ? (
-        view === 'board' ? <TaskBoard tasks={filteredTasks} onOpenTask={setSelectedTaskId} /> : <TaskListView tasks={filteredTasks} onOpenTask={setSelectedTaskId} />
+        view === 'board' ? <TaskBoard tasks={filteredTasks} onOpenTask={openTask} /> : <TaskListView tasks={filteredTasks} onOpenTask={openTask} />
       ) : (
         <section className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center"><ClipboardCheck size={28} className="mx-auto text-slate-400" /><h2 className="mt-3 text-sm font-semibold text-slate-800">No matching tasks</h2><p className="mt-1 text-xs text-slate-500">Clear or adjust the current filters to see more work.</p><button type="button" onClick={() => setFilters(emptyFilters)} className="mt-4 text-xs font-semibold text-brand-700">Reset filters</button></section>
       )}
 
-      <TaskFormModal key={`${initialSiteId ?? 'all'}-${modalVersion}`} open={createOpen} sites={sites} members={teamMembers} initialSiteId={initialSiteId} onClose={() => setCreateOpen(false)} onCreate={handleCreate} />
-      {selectedTask && <TaskDetailDrawer key={selectedTask.id} task={selectedTask} role={role} members={teamMembers} onClose={() => setSelectedTaskId(null)} onUpdate={handleUpdate} onAddComment={handleComment} />}
-      {notice && <div role="status" className="fixed bottom-5 right-5 z-[1100] flex max-w-sm items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-pop"><Check size={15} className="text-slate-600" />{notice}</div>}
+      <TaskFormModal key={searchParams.toString()} open={createOpen} sites={sites} members={teamMembers} initialSiteId={initialSiteId} onClose={closePanel} onCreate={handleCreate} />
+      {selectedTask && (
+        <TaskDetailDrawer
+          key={selectedTask.id}
+          task={selectedTask}
+          role={role}
+          members={teamMembers}
+          logs={selectedLogs}
+          onClose={closePanel}
+          onUpdate={handleUpdate}
+          onAddComment={handleComment}
+          onAddToCalendar={() => addTaskToCalendar(selectedTask).then((result) => showNotice(describeCalendarResult(result)))}
+          onDownloadIcs={() => { downloadTaskIcs(selectedTask); showNotice('Deadline file downloaded for Outlook, Apple, or Google Calendar.') }}
+          onEmailReminder={() => emailTaskReminder(selectedTask).then((log) => showNotice(describeEmailResult([log], 'reminder')))}
+          onWhatsAppReminder={() => showNotice(describeWhatsAppResult(whatsappTaskReminder(selectedTask)))}
+        />
+      )}
+      <Toast message={notice} />
     </div>
   )
 }

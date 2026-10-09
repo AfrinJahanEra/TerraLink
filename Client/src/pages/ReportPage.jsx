@@ -1,28 +1,39 @@
-import { Eye, FileDown, FileText, Mail, RefreshCw } from 'lucide-react'
+import { CalendarPlus, Eye, FileDown, FileText, Mail, RefreshCw } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ReportPreview } from '../components/reports/ReportPreview'
+import { ShareReportModal } from '../components/reports/ShareReportModal'
 import { Button } from '../components/ui/Button'
+import { PageHeader } from '../components/ui/PageHeader'
+import { Toast } from '../components/ui/Toast'
 import { useApp } from '../hooks/useApp'
+import { useNotice } from '../hooks/useNotice'
+import { describeEmailResult } from '../utils/communications'
 import { buildReportData, buildReportEmailSummary } from '../utils/report'
+import { buildScheduleLink } from '../utils/schedule'
+
+const secondaryLinkClass = 'inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-card hover:bg-slate-50'
 
 export function ReportPage() {
-  const { sites, tasks, decisions, expenses, siteBudgets, emailReportSummary } = useApp()
+  const { role, sites, tasks, decisions, expenses, siteBudgets, teamMembers, shareReport } = useApp()
   const [siteId, setSiteId] = useState('pond-a')
   const [from, setFrom] = useState('2026-09-01')
   const [to, setTo] = useState('2026-10-31')
   const [generated, setGenerated] = useState(null)
-  const [sending, setSending] = useState(false)
-  const [notice, setNotice] = useState('')
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareVersion, setShareVersion] = useState(0)
+  const [notice, showNotice] = useNotice(3500)
   const canGenerate = Boolean(siteId && from && to && from <= to)
+  const canSchedule = role.id === 'manager' || role.id === 'operator'
 
   const currentReport = useMemo(() => generated ? buildReportData({
     sites, tasks, decisions, expenses, siteBudgets, ...generated,
   }) : null, [decisions, expenses, generated, siteBudgets, sites, tasks])
 
-  function showNotice(message) {
-    setNotice(message)
-    window.setTimeout(() => setNotice(''), 3200)
-  }
+  const scope = currentReport ? (currentReport.siteId === 'all' ? 'All monitored wetlands' : currentReport.sites[0]?.name ?? 'Selected site') : ''
+  const reportTitle = currentReport ? `${scope}, ${currentReport.from} to ${currentReport.to}` : ''
+  const reportSummary = useMemo(() => currentReport ? buildReportEmailSummary(currentReport) : '', [currentReport])
+  const defaultRecipientIds = teamMembers.filter((member) => member.id === 'member-nusrat' && member.name !== role.user.name).map((member) => member.id)
 
   function generateReport() {
     if (!canGenerate) {
@@ -34,29 +45,39 @@ export function ReportPage() {
     showNotice('Report preview generated from the current workspace state.')
   }
 
-  async function emailReport() {
-    if (!currentReport) return
-    setSending(true)
-    const scope = currentReport.siteId === 'all' ? 'All monitored wetlands' : currentReport.sites[0]?.name
-    try {
-      const result = await emailReportSummary(
-        `${scope}, ${currentReport.from} to ${currentReport.to}`,
-        buildReportEmailSummary(currentReport),
-      )
-      showNotice(result.status === 'Failed' ? 'Email delivery failed. See Integrations for details.' : 'Report summary email sent.')
-    } catch (error) {
-      showNotice(error instanceof Error ? error.message : 'Report email could not be sent.')
-    } finally {
-      setSending(false)
-    }
+  function openShare() {
+    setShareVersion((version) => version + 1)
+    setShareOpen(true)
   }
+
+  async function handleShare({ recipientIds, note }) {
+    const logs = await shareReport({ recipientIds, title: reportTitle, summary: reportSummary, note })
+    setShareOpen(false)
+    showNotice(describeEmailResult(logs, 'report email'))
+  }
+
+  const briefingLink = currentReport ? buildScheduleLink({
+    new: 'report_briefing',
+    site: currentReport.siteId === 'all' ? '' : currentReport.siteId,
+    title: `Report briefing: ${scope}`,
+    agenda: `Walk through the ${reportTitle} report and agree follow-up actions.`,
+  }) : ''
 
   return (
     <div className="report-page animate-fade-in space-y-6 pb-8">
-      <header className="print-hidden flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-700">Accountability</p><h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Reports</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">Generate an A4-ready record from the current observations, decisions, tasks, and costs.</p></div>
-        {currentReport && <div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={emailReport} disabled={sending}><Mail size={15} />{sending ? 'Sending...' : 'Email this report'}</Button><Button type="button" onClick={() => window.print()}><FileDown size={15} />Print / Save as PDF</Button></div>}
-      </header>
+      <PageHeader
+        className="print-hidden"
+        eyebrow="Accountability"
+        title="Reports"
+        description="Generate an A4-ready record from current observations, decisions, tasks, and costs, then share it or schedule a briefing."
+        actions={currentReport && (
+          <>
+            {canSchedule && <Link to={briefingLink} className={secondaryLinkClass}><CalendarPlus size={15} className="text-slate-500" />Schedule briefing</Link>}
+            <Button type="button" variant="secondary" onClick={openShare}><Mail size={15} />Share by email</Button>
+            <Button type="button" onClick={() => window.print()}><FileDown size={15} />Print / Save as PDF</Button>
+          </>
+        )}
+      />
 
       <section className="print-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-card">
         <div className="grid gap-4 lg:grid-cols-[minmax(180px,1fr)_minmax(150px,0.65fr)_minmax(150px,0.65fr)_auto] lg:items-end">
@@ -69,10 +90,20 @@ export function ReportPage() {
       </section>
 
       {currentReport ? <ReportPreview report={currentReport} /> : (
-        <section className="print-hidden grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-white px-6 text-center"><div><FileText size={30} className="mx-auto text-slate-400" /><h2 className="mt-4 text-sm font-semibold text-slate-800">Build a current-state report</h2><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">Choose a site and reporting period, then generate a preview before printing or saving it as PDF.</p></div></section>
+        <section className="print-hidden grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-white px-6 text-center"><div><FileText size={30} className="mx-auto text-slate-400" /><h2 className="mt-4 text-sm font-semibold text-slate-800">Build a current-state report</h2><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">Choose a site and reporting period, then generate a preview before printing, sharing, or scheduling a briefing.</p></div></section>
       )}
 
-      {notice && <div role="status" className="print-hidden fixed bottom-5 right-5 z-[1100] max-w-sm rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-pop">{notice}</div>}
+      <ShareReportModal
+        key={shareVersion}
+        open={shareOpen && Boolean(currentReport)}
+        title={reportTitle}
+        summary={reportSummary}
+        members={teamMembers}
+        defaultRecipientIds={defaultRecipientIds}
+        onClose={() => setShareOpen(false)}
+        onSend={handleShare}
+      />
+      <Toast message={notice} className="print-hidden" />
     </div>
   )
 }

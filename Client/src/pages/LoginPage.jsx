@@ -90,7 +90,7 @@ export function LoginPage() {
         <div className="relative my-12 rounded-2xl border border-white/10 bg-white/[0.06] p-7 shadow-2xl shadow-black/15 backdrop-blur-sm">
           <div className="flex items-center justify-between border-b border-white/10 pb-5">
             <div><p className="text-xs text-brand-200">Sample monitoring area</p><p className="mt-1 font-semibold">Pond A · Gazipur</p></div>
-            <span className="rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-200">Needs review</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white"><span className="size-1.5 rounded-full bg-amber-400" />Needs review</span>
           </div>
           <div className="grid grid-cols-2 gap-6 py-6">
             <div><Map size={20} className="text-white/70" /><p className="mt-3 text-2xl font-semibold">5</p><p className="text-xs text-brand-100/70">Monitored sites</p></div>

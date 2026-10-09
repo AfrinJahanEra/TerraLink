@@ -5,9 +5,9 @@ import { isTaskOverdue } from '../../utils/tasks'
 import { Badge } from '../ui/Badge'
 
 const priorityStyles = {
-  High: 'text-rose-700',
-  Medium: 'text-amber-700',
-  Low: 'text-slate-500',
+  High: 'text-slate-900',
+  Medium: 'text-slate-600',
+  Low: 'text-slate-400',
 }
 
 export function TaskCard({ task, onOpen, showStatus = false }) {

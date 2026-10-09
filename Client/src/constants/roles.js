@@ -10,7 +10,7 @@ export const ROLES = {
     capabilities: [
       'Review and approve monitoring findings',
       'Assign work and monitor delivery',
-      'Manage budgets, reports, and integrations',
+      'Manage budgets, schedules, reports, and settings',
     ],
     user: { name: 'Nusrat Jahan', email: 'manager@terralink.demo' },
   },

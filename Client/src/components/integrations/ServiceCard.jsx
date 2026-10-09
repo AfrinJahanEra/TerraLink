@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert, LoaderCircle } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { Button } from '../ui/Button'
 
 export function ServiceCard({
@@ -21,8 +21,8 @@ export function ServiceCard({
           <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><Icon size={19} /></span>
           <div><h2 className="text-sm font-semibold text-slate-900">{name}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div>
         </div>
-        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${connected ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-          {connected ? <CheckCircle2 size={12} /> : <CircleAlert size={12} />}{statusLabel}
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
+          <span className={`size-1.5 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />{statusLabel}
         </span>
       </div>
 
