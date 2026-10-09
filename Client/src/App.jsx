@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage'
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })))
 const MapPage = lazy(() => import('./pages/MapPage').then((module) => ({ default: module.MapPage })))
+const SiteDetailsPage = lazy(() => import('./pages/SiteDetailsPage').then((module) => ({ default: module.SiteDetailsPage })))
 const ModulePage = lazy(() => import('./pages/ModulePage').then((module) => ({ default: module.ModulePage })))
 
 function ProtectedLayout() {
@@ -29,7 +30,7 @@ function AppRoutes() {
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/map" element={<MapPage />} />
-          <Route path="/sites/:siteId" element={<ModulePage type="analysis" />} />
+          <Route path="/sites/:siteId" element={<SiteDetailsPage />} />
           <Route path="/tasks" element={<ModulePage type="tasks" />} />
           <Route path="/team" element={<ModulePage type="team" />} />
           <Route path="/budget" element={<ModulePage type="budget" />} />

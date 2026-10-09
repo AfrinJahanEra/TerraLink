@@ -27,11 +27,10 @@ import { Button } from '../components/ui/Button'
 import {
   budgetSummary,
   dashboardActivities,
-  dashboardSites,
-  dashboardTasks,
   integrationStatus,
   trendData,
 } from '../data/dashboard'
+import { SITE_STATUS } from '../constants/status'
 import { useApp } from '../hooks/useApp'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
@@ -124,19 +123,22 @@ function RoleScope({ role, view }) {
 }
 
 function PriorityObservation({ site, view }) {
+  const status = SITE_STATUS[site.status]
+  const requiresReview = site.status === 'needs_review'
+
   return (
     <section className="overflow-hidden rounded-xl border border-amber-200 bg-white shadow-card">
       <div className="flex flex-col gap-4 border-b border-amber-100 bg-amber-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><CircleAlert size={18} /></span>
-          <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold text-slate-900">{view.priorityTitle}</h2><Badge tone="amber">Needs review</Badge></div><p className="mt-0.5 text-xs text-slate-500">A possible water-area change needs human verification.</p></div>
+          <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold text-slate-900">{requiresReview ? view.priorityTitle : 'Latest monitored site'}</h2><Badge tone={status.tone}>{status.label}</Badge></div><p className="mt-0.5 text-xs text-slate-500">{requiresReview ? 'A possible water-area change needs human verification.' : 'The latest manager decision is reflected across the workspace.'}</p></div>
         </div>
         <Button as={Link} to={view.actionTo} className="min-h-9 self-start px-3 text-xs sm:self-auto">{view.actionLabel} <ArrowRight size={14} /></Button>
       </div>
 
       <div className="grid gap-6 p-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
         <div className="grid grid-cols-2 gap-2">
-          {[['March 2022', dashboardSites[1].image], ['March 2024', site.image]].map(([label, image]) => (
+          {[['March 2022', site.beforeImage], ['March 2024', site.afterImage]].map(([label, image]) => (
             <figure key={label} className="relative overflow-hidden rounded-lg bg-slate-100">
               <img src={image} alt={`Illustrative overhead wetland view for ${label}`} className="h-36 w-full object-cover sm:h-44" />
               <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between rounded-md bg-slate-950/70 px-2 py-1 text-[9px] text-white backdrop-blur-sm"><span>{label}</span><span>Sample</span></figcaption>
@@ -159,18 +161,18 @@ function PriorityObservation({ site, view }) {
 }
 
 export function DashboardPage() {
-  const { role } = useApp()
+  const { role, sites, tasks } = useApp()
   const [chartRange, setChartRange] = useState('7 days')
   const [overviewRange, setOverviewRange] = useState('Last 30 days')
   const [activities, setActivities] = useLocalStorage('terralink.dashboard.activities', dashboardActivities)
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [lastUpdated, setLastUpdated] = useState('Just now')
 
-  const prioritySite = dashboardSites.find((site) => site.id === 'pond-a')
-  const needsReview = dashboardSites.filter((site) => site.status === 'needs_review').length
+  const prioritySite = sites.find((site) => site.status === 'needs_review') ?? sites[0]
+  const needsReview = sites.filter((site) => site.status === 'needs_review').length
   const view = roleViews[role.id]
-  const visibleSites = view.siteIds ? dashboardSites.filter((site) => view.siteIds.includes(site.id)) : dashboardSites
-  const visibleTasks = view.taskAssignee ? dashboardTasks.filter((task) => task.assignee === view.taskAssignee) : dashboardTasks
+  const visibleSites = view.siteIds ? sites.filter((site) => view.siteIds.includes(site.id)) : sites
+  const visibleTasks = view.taskAssignee ? tasks.filter((task) => task.assignee === view.taskAssignee) : tasks
   const kpis = useMemo(
     () => buildKpis(role.id, needsReview, visibleSites, visibleTasks),
     [role.id, needsReview, visibleSites, visibleTasks],

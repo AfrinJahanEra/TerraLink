@@ -12,7 +12,7 @@ import { useMemo, useState } from 'react'
 import { SiteDetailsPanel } from '../components/map/SiteDetailsPanel'
 import { WetlandMap } from '../components/map/WetlandMap'
 import { SITE_STATUS } from '../constants/status'
-import { dashboardSites } from '../data/dashboard'
+import { useApp } from '../hooks/useApp'
 import { cn } from '../utils/cn'
 
 const filters = [
@@ -104,6 +104,7 @@ function SiteDirectory({ sites, allSites, selectedId, query, status, onQueryChan
 }
 
 export function MapPage() {
+  const { sites: dashboardSites } = useApp()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const [selectedId, setSelectedId] = useState(null)
@@ -116,7 +117,7 @@ export function MapPage() {
       const matchesSearch = !search || `${site.name} ${site.location}`.toLowerCase().includes(search)
       return matchesStatus && matchesSearch
     })
-  }, [query, status])
+  }, [dashboardSites, query, status])
 
   const selectedSite = visibleSites.find((site) => site.id === selectedId) ?? null
   const reviewCount = dashboardSites.filter((site) => site.status === 'needs_review').length
