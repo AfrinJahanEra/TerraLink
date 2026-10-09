@@ -1,5 +1,6 @@
-import { ArrowRight, CircleDollarSign } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CircleDollarSign } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { formatBdt } from '../../utils/currency'
 
 function buildPoints(data, key, width = 400, height = 150) {
   const max = Math.max(...data.flatMap((item) => [item.reviewed, item.tasks]), 1)
@@ -40,10 +41,11 @@ export function MonitoringTrend({ data, range, onRangeChange }) {
 
 export function BudgetCard({ budget, title = 'Budget overview', subtitle = 'Current programme budget' }) {
   const remaining = budget.total - budget.spent
-  const usedPercent = Math.round((budget.spent / budget.total) * 100)
-  const pendingPercent = Math.round((budget.pending / budget.total) * 100)
+  const usedPercent = budget.total ? Math.round((budget.spent / budget.total) * 100) : 0
+  const chartUsedPercent = Math.min(usedPercent, 100)
+  const pendingPercent = budget.total ? Math.min(Math.round((budget.pending / budget.total) * 100), 100 - chartUsedPercent) : 0
   const circumference = 2 * Math.PI * 42
-  const currency = (value) => `৳${value.toLocaleString('en-US')}`
+  const overBudget = remaining < 0
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
@@ -52,15 +54,15 @@ export function BudgetCard({ budget, title = 'Budget overview', subtitle = 'Curr
         <div className="relative size-28 shrink-0">
           <svg viewBox="0 0 100 100" className="-rotate-90 size-full" role="img" aria-label={`${usedPercent}% of programme budget spent`}>
             <circle cx="50" cy="50" r="42" fill="none" stroke="#e2e8f0" strokeWidth="11" />
-            <circle cx="50" cy="50" r="42" fill="none" stroke="#f59e0b" strokeWidth="11" strokeDasharray={`${circumference * pendingPercent / 100} ${circumference}`} strokeDashoffset={-circumference * usedPercent / 100} />
-            <circle cx="50" cy="50" r="42" fill="none" stroke="#20787d" strokeWidth="11" strokeDasharray={`${circumference * usedPercent / 100} ${circumference}`} strokeLinecap="round" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#f59e0b" strokeWidth="11" strokeDasharray={`${circumference * pendingPercent / 100} ${circumference}`} strokeDashoffset={-circumference * chartUsedPercent / 100} />
+            <circle cx="50" cy="50" r="42" fill="none" stroke={overBudget ? '#e11d48' : '#20787d'} strokeWidth="11" strokeDasharray={`${circumference * chartUsedPercent / 100} ${circumference}`} strokeLinecap="round" />
           </svg>
           <div className="pointer-events-none absolute inset-0 grid place-items-center text-center"><div><p className="text-lg font-bold text-slate-900">{usedPercent}%</p><p className="text-[9px] text-slate-400">used</p></div></div>
         </div>
         <div className="min-w-0 flex-1 space-y-2.5 text-xs">
-          <div className="flex justify-between gap-3"><span className="flex items-center gap-2 text-slate-500"><span className="size-2 rounded-full bg-brand-600" />Spent</span><span className="font-semibold text-slate-800">{currency(budget.spent)}</span></div>
-          <div className="flex justify-between gap-3"><span className="flex items-center gap-2 text-slate-500"><span className="size-2 rounded-full bg-amber-500" />Pending</span><span className="font-semibold text-slate-800">{currency(budget.pending)}</span></div>
-          <div className="flex justify-between gap-3 border-t border-slate-100 pt-2.5"><span className="flex items-center gap-2 text-slate-500"><CircleDollarSign size={14} />Remaining</span><span className="font-semibold text-emerald-700">{currency(remaining)}</span></div>
+          <div className="flex justify-between gap-3"><span className="flex items-center gap-2 text-slate-500"><span className={overBudget ? 'size-2 rounded-full bg-rose-500' : 'size-2 rounded-full bg-brand-600'} />Spent</span><span className="font-semibold text-slate-800">{formatBdt(budget.spent)}</span></div>
+          <div className="flex justify-between gap-3"><span className="flex items-center gap-2 text-slate-500"><span className="size-2 rounded-full bg-amber-500" />Pending</span><span className="font-semibold text-slate-800">{formatBdt(budget.pending)}</span></div>
+          <div className="flex justify-between gap-3 border-t border-slate-100 pt-2.5"><span className="flex items-center gap-2 text-slate-500">{overBudget ? <AlertTriangle size={14} className="text-slate-600" /> : <CircleDollarSign size={14} />}Remaining</span><span className={overBudget ? 'font-semibold text-rose-700' : 'font-semibold text-emerald-700'}>{formatBdt(remaining)}</span></div>
         </div>
       </div>
     </section>

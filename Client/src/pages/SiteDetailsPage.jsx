@@ -19,6 +19,7 @@ import { Button } from '../components/ui/Button'
 import { SITE_STATUS } from '../constants/status'
 import { analysisSources, getSiteComparisons } from '../data/siteAnalysis'
 import { useApp } from '../hooks/useApp'
+import { createActivity, formatTaskDate } from '../utils/tasks'
 
 function ReadOnlyReview({ role, decision }) {
   return (
@@ -54,7 +55,7 @@ function SourcePanel({ site, comparison }) {
 
 export function SiteDetailsPage() {
   const { siteId } = useParams()
-  const { role, sites, tasks, decisions, recordDecision, createTask, resetDemo } = useApp()
+  const { role, sites, tasks, teamMembers, decisions, recordDecision, createTask, resetDemo } = useApp()
   const site = sites.find((item) => item.id === siteId)
   const comparisons = useMemo(() => site ? getSiteComparisons(site) : [], [site])
   const [periodId, setPeriodId] = useState('2021-2024')
@@ -90,15 +91,22 @@ export function SiteDetailsPage() {
   }
 
   function handleCreateTask(task) {
-    const date = new Date(`${task.dueDate}T12:00:00`)
-    const taskId = `TL-${101 + tasks.length}`
+    const highestId = tasks.reduce((highest, item) => Math.max(highest, Number(item.id.replace('TL-', '')) || 0), 100)
+    const taskId = `TL-${highestId + 1}`
     createTask({
       ...task,
       id: taskId,
+      description: task.notes,
       site: site.name,
       siteId: site.id,
-      due: new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short' }).format(date),
+      due: formatTaskDate(task.dueDate),
       status: 'approved',
+      estimatedCost: 0,
+      actualCost: 0,
+      assignedBy: role.user.name,
+      notifications: { email: true, calendar: true, whatsapp: true },
+      comments: [],
+      activityHistory: [createActivity(`Task created from ${site.name} analysis`, role.user.name)],
       createdAt: new Date().toISOString(),
     })
     setTaskOpen(false)
@@ -145,7 +153,7 @@ export function SiteDetailsPage() {
         )}
       </div>
 
-      <TaskCreationModal open={taskOpen} site={site} onClose={() => setTaskOpen(false)} onCreate={handleCreateTask} />
+      <TaskCreationModal open={taskOpen} site={site} members={teamMembers} onClose={() => setTaskOpen(false)} onCreate={handleCreateTask} />
 
       {notice && <div role="status" className="fixed bottom-5 right-5 z-[1100] flex max-w-sm items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 shadow-pop"><Check size={15} className="text-slate-600" />{notice}</div>}
     </div>

@@ -4,8 +4,11 @@ import { cn } from '../../utils/cn'
 
 const statusStyles = {
   needs_review: { label: 'Needs review', className: 'bg-amber-50 text-amber-700 ring-amber-200', dot: 'bg-amber-500' },
+  confirmed: { label: 'Confirmed for follow-up', className: 'bg-rose-50 text-rose-700 ring-rose-200', dot: 'bg-rose-500' },
+  inconclusive: { label: 'Inconclusive', className: 'bg-slate-100 text-slate-600 ring-slate-200', dot: 'bg-slate-400' },
   no_change: { label: 'No change', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
-  insufficient_data: { label: 'Insufficient data', className: 'bg-slate-100 text-slate-600 ring-slate-200', dot: 'bg-slate-400' },
+  insufficient_data: { label: 'Insufficient data', className: 'bg-violet-50 text-violet-700 ring-violet-200', dot: 'bg-violet-500' },
+  unknown: { label: 'Unknown', className: 'bg-slate-100 text-slate-600 ring-slate-200', dot: 'bg-slate-400' },
 }
 
 export function SiteSnapshot({ sites }) {
@@ -18,7 +21,7 @@ export function SiteSnapshot({ sites }) {
 
       <div className="divide-y divide-slate-100">
         {sites.map((site) => {
-          const status = statusStyles[site.status]
+          const status = statusStyles[site.status] ?? statusStyles.unknown
           return (
             <Link key={site.id} to={`/sites/${site.id}`} className="group flex items-center gap-3 px-4 py-3 transition hover:bg-slate-50/80 sm:px-5">
               <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">

@@ -6,6 +6,8 @@ const statuses = {
   review_pending: { label: 'Review pending', className: 'bg-amber-50 text-amber-700' },
   approved: { label: 'Approved', className: 'bg-sky-50 text-sky-700' },
   in_progress: { label: 'In progress', className: 'bg-brand-50 text-brand-700' },
+  reported_complete: { label: 'Reported complete', className: 'bg-emerald-50 text-emerald-700' },
+  unknown: { label: 'Unknown', className: 'bg-slate-100 text-slate-600' },
 }
 
 export function TaskList({ tasks, title = 'Open tasks', subtitle = 'Priority work across all sites' }) {
@@ -17,7 +19,7 @@ export function TaskList({ tasks, title = 'Open tasks', subtitle = 'Priority wor
       </div>
       <div className="divide-y divide-slate-100">
         {tasks.map((task) => {
-          const status = statuses[task.status]
+          const status = statuses[task.status] ?? statuses.unknown
           return (
             <Link key={task.id} to="/tasks" className="group grid gap-3 px-5 py-3.5 transition hover:bg-slate-50/80 sm:grid-cols-[minmax(0,1fr)_110px_90px_120px] sm:items-center">
               <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800">{task.title}</p><p className="mt-1 text-[11px] text-slate-400">{task.id} · {task.site}</p></div>

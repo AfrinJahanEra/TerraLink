@@ -90,10 +90,24 @@ export const dashboardSites = [
 ]
 
 export const dashboardTasks = [
-  { id: 'TL-104', title: 'Verify water-area change', site: 'Pond A', assignee: 'Rahim Uddin', initials: 'RU', due: 'Today', status: 'review_pending' },
-  { id: 'TL-103', title: 'Upload site visit evidence', site: 'Beel E', assignee: 'Sadia Akter', initials: 'SA', due: 'Tomorrow', status: 'in_progress' },
-  { id: 'TL-102', title: 'Review cloud coverage', site: 'Wetland C', assignee: 'Tanvir Hasan', initials: 'TH', due: '12 Oct', status: 'approved' },
-  { id: 'TL-101', title: 'Validate seasonal comparison', site: 'Lake D', assignee: 'Rahim Uddin', initials: 'RU', due: '14 Oct', status: 'review_pending' },
+  {
+    id: 'TL-104', title: 'Verify water-area change', description: 'Visit Pond A and verify the possible reduction using geotagged field evidence.', site: 'Pond A', siteId: 'pond-a', assignee: 'Rahim Uddin', initials: 'RU', due: 'Today', dueDate: '2026-10-09', status: 'review_pending', priority: 'High', estimatedCost: 6500, actualCost: 0, assignedBy: 'Nusrat Jahan', createdAt: '2026-10-08T09:00:00.000Z', notifications: { email: true, calendar: true, whatsapp: true }, comments: [], activityHistory: [{ id: 'history-104-1', action: 'Task created from Pond A observation', actor: 'Nusrat Jahan', time: '08 Oct 2026' }],
+  },
+  {
+    id: 'TL-103', title: 'Upload site visit evidence', description: 'Organize photographs and field notes from the latest Beel E visit.', site: 'Beel E', siteId: 'beel-e', assignee: 'Sadia Akter', initials: 'SA', due: 'Tomorrow', dueDate: '2026-10-10', status: 'in_progress', priority: 'Medium', estimatedCost: 3200, actualCost: 1800, assignedBy: 'Nusrat Jahan', createdAt: '2026-10-06T08:30:00.000Z', notifications: { email: true, calendar: false, whatsapp: false }, comments: [{ id: 'comment-103-1', author: 'Sadia Akter', text: 'Field photographs received and awaiting final labels.', time: '08 Oct 2026' }], activityHistory: [{ id: 'history-103-1', action: 'Status changed to In progress', actor: 'Sadia Akter', time: '07 Oct 2026' }],
+  },
+  {
+    id: 'TL-102', title: 'Review cloud coverage', description: 'Check whether the available imagery is sufficient for a defensible comparison.', site: 'Wetland C', siteId: 'wetland-c', assignee: 'Tanvir Hasan', initials: 'TH', due: '12 Oct', dueDate: '2026-10-12', status: 'approved', priority: 'Medium', estimatedCost: 2400, actualCost: 0, assignedBy: 'Nusrat Jahan', createdAt: '2026-10-05T10:15:00.000Z', notifications: { email: true, calendar: true, whatsapp: false }, comments: [], activityHistory: [{ id: 'history-102-1', action: 'Task approved for technical review', actor: 'Nusrat Jahan', time: '06 Oct 2026' }],
+  },
+  {
+    id: 'TL-101', title: 'Validate seasonal comparison', description: 'Confirm that both Lake D observations represent a comparable seasonal window.', site: 'Lake D', siteId: 'lake-d', assignee: 'Rahim Uddin', initials: 'RU', due: '14 Oct', dueDate: '2026-10-14', status: 'review_pending', priority: 'Low', estimatedCost: 1800, actualCost: 0, assignedBy: 'Nusrat Jahan', createdAt: '2026-10-04T07:45:00.000Z', notifications: { email: false, calendar: true, whatsapp: false }, comments: [], activityHistory: [{ id: 'history-101-1', action: 'Task created for seasonal validation', actor: 'Nusrat Jahan', time: '04 Oct 2026' }],
+  },
+  {
+    id: 'TL-100', title: 'Complete Pond B inspection', description: 'Record the routine field inspection and attach the completion note.', site: 'Pond B', siteId: 'pond-b', assignee: 'Rahim Uddin', initials: 'RU', due: '05 Oct', dueDate: '2026-10-05', status: 'reported_complete', priority: 'Low', estimatedCost: 2800, actualCost: 2600, assignedBy: 'Nusrat Jahan', createdAt: '2026-10-01T08:00:00.000Z', notifications: { email: true, calendar: true, whatsapp: false }, comments: [{ id: 'comment-100-1', author: 'Rahim Uddin', text: 'Inspection completed; no immediate intervention required.', time: '05 Oct 2026' }], activityHistory: [{ id: 'history-100-1', action: 'Completion reported with field note', actor: 'Rahim Uddin', time: '05 Oct 2026' }],
+  },
+  {
+    id: 'TL-099', title: 'Confirm boundary reference points', description: 'Review the recorded boundary points before the next comparison is approved.', site: 'Beel E', siteId: 'beel-e', assignee: 'Sadia Akter', initials: 'SA', due: '07 Oct', dueDate: '2026-10-07', status: 'approved', priority: 'High', estimatedCost: 2100, actualCost: 0, assignedBy: 'Nusrat Jahan', createdAt: '2026-10-02T11:30:00.000Z', notifications: { email: true, calendar: true, whatsapp: true }, comments: [], activityHistory: [{ id: 'history-099-1', action: 'Task approved and assigned', actor: 'Nusrat Jahan', time: '03 Oct 2026' }],
+  },
 ]
 
 export const dashboardActivities = [

@@ -1,9 +1,10 @@
-import { Bell, Check, ChevronDown, LogOut, Menu, Search } from 'lucide-react'
+import { Bell, Check, ChevronDown, CircleHelp, LogOut, Menu, Search } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROLE_LIST } from '../../constants/roles'
 import { useClickOutside } from '../../hooks/useClickOutside'
 import { useApp } from '../../hooks/useApp'
+import { AboutPanel } from './AboutPanel'
 
 const roleNotices = {
   manager: {
@@ -25,6 +26,7 @@ export function Topbar({ title, onOpenMenu }) {
   const navigate = useNavigate()
   const [roleOpen, setRoleOpen] = useState(false)
   const [noticeOpen, setNoticeOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const roleRef = useRef(null)
   const noticeRef = useRef(null)
   useClickOutside(roleRef, () => setRoleOpen(false), roleOpen)
@@ -53,6 +55,10 @@ export function Topbar({ title, onOpenMenu }) {
         <button type="button" className="hidden h-10 w-56 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-400 transition hover:border-slate-300 md:flex">
           <Search size={17} /> Search workspace
           <kbd className="ml-auto rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-400">⌘K</kbd>
+        </button>
+
+        <button type="button" onClick={() => setAboutOpen(true)} aria-label="About and help" title="About and help" className="grid size-10 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">
+          <CircleHelp size={19} />
         </button>
 
         <div className="relative" ref={noticeRef}>
@@ -97,6 +103,7 @@ export function Topbar({ title, onOpenMenu }) {
           )}
         </div>
       </div>
+      <AboutPanel open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </header>
   )
 }

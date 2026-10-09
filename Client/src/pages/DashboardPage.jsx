@@ -25,14 +25,15 @@ import { TaskList } from '../components/dashboard/TaskList'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import {
-  budgetSummary,
   dashboardActivities,
-  integrationStatus,
   trendData,
 } from '../data/dashboard'
 import { SITE_STATUS } from '../constants/status'
 import { useApp } from '../hooks/useApp'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { getGoogleCalendarConfiguration } from '../services/calendar'
+import { getEmailConfiguration } from '../services/email'
+import { normalizeWhatsAppNumber } from '../services/whatsapp'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -92,22 +93,24 @@ const roleViews = {
 }
 
 function buildKpis(roleId, needsReview, visibleSites, visibleTasks) {
+  const openTasks = visibleTasks.filter((task) => task.status !== 'reported_complete')
+
   if (roleId === 'coordinator') return [
     { label: 'Assigned sites', value: visibleSites.length, trend: 12, trendLabel: 'this month', icon: MapPinned, to: '/map' },
-    { label: 'My open tasks', value: visibleTasks.length, trend: -20, trendLabel: 'vs. last week', icon: ClipboardCheck, to: '/tasks' },
-    { label: 'Due today', value: visibleTasks.filter((task) => task.due === 'Today').length, trend: 0, trendLabel: 'requires attention', icon: FileClock, to: '/tasks' },
+    { label: 'My open tasks', value: openTasks.length, trend: -20, trendLabel: 'vs. last week', icon: ClipboardCheck, to: '/tasks' },
+    { label: 'Due today', value: openTasks.filter((task) => task.due === 'Today').length, trend: 0, trendLabel: 'requires attention', icon: FileClock, to: '/tasks' },
     { label: 'Costs recorded', value: '৳4.2k', trend: 8, trendLabel: 'this month', icon: ReceiptText, to: '/budget' },
   ]
   if (roleId === 'operator') return [
     { label: 'Site records', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Files, to: '/map' },
     { label: 'Review queue', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/tasks' },
-    { label: 'Open tasks', value: visibleTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
+    { label: 'Open tasks', value: openTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
     { label: 'Reports ready', value: 3, trend: 50, trendLabel: 'this month', icon: FileClock, to: '/reports' },
   ]
   return [
     { label: 'Monitored sites', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Droplets, to: '/map' },
     { label: 'Needs review', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/tasks' },
-    { label: 'Open tasks', value: visibleTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
+    { label: 'Open tasks', value: openTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
     { label: 'Budget spent', value: '৳18.2k', trend: 7.8, trendLabel: 'this month', icon: WalletCards, to: '/budget' },
   ]
 }
@@ -161,12 +164,24 @@ function PriorityObservation({ site, view }) {
 }
 
 export function DashboardPage() {
-  const { role, sites, tasks } = useApp()
+  const { role, sites, tasks, teamMembers, budgetSummary } = useApp()
   const [chartRange, setChartRange] = useState('7 days')
   const [overviewRange, setOverviewRange] = useState('Last 30 days')
   const [activities, setActivities] = useLocalStorage('terralink.dashboard.activities', dashboardActivities)
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [lastUpdated, setLastUpdated] = useState('Just now')
+
+  const integrationStatuses = useMemo(() => {
+    const email = getEmailConfiguration()
+    const calendar = getGoogleCalendarConfiguration()
+    const manager = teamMembers.find((member) => member.id === 'member-nusrat') ?? teamMembers[0]
+    const whatsappReady = Boolean(normalizeWhatsAppNumber(manager?.whatsapp))
+    return [
+      { id: 'email', name: 'Email', detail: email.configured ? 'EmailJS delivery connected' : 'EmailJS credentials required', state: email.configured ? 'ready' : 'pending' },
+      { id: 'calendar', name: 'Calendar', detail: calendar.connected ? 'Google Calendar connected' : calendar.configured ? 'Google sign-in required' : 'Google OAuth client required', state: calendar.connected ? 'ready' : 'pending' },
+      { id: 'whatsapp', name: 'WhatsApp', detail: whatsappReady ? 'Click-to-chat ready' : 'Manager number required', state: whatsappReady ? 'ready' : 'pending' },
+    ]
+  }, [teamMembers])
 
   const prioritySite = sites.find((site) => site.status === 'needs_review') ?? sites[0]
   const needsReview = sites.filter((site) => site.status === 'needs_review').length
@@ -209,7 +224,7 @@ export function DashboardPage() {
 
       <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 shadow-card"><span>Showing {overviewRange.toLowerCase()} · {visibleSites.length} sample sites</span><span className="flex items-center gap-1.5 font-medium text-slate-600"><CircleCheck size={13} /> {lastUpdated}</span></div>
 
-      <IntegrationStrip integrations={integrationStatus} canManage={view.showIntegrations} />
+      <IntegrationStrip integrations={integrationStatuses} canManage={view.showIntegrations} />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.75fr)]">
         <div className="space-y-6">

@@ -2,15 +2,9 @@ import { CalendarDays, ClipboardPlus, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../ui/Button'
 
-const assignees = [
-  { name: 'Rahim Uddin', initials: 'RU' },
-  { name: 'Sadia Akter', initials: 'SA' },
-  { name: 'Tanvir Hasan', initials: 'TH' },
-]
-
-export function TaskCreationModal({ open, site, onClose, onCreate }) {
+export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
   const [title, setTitle] = useState('Verify observed water-area change')
-  const [assignee, setAssignee] = useState(assignees[0].name)
+  const [assignee, setAssignee] = useState(members[0]?.name ?? '')
   const [dueDate, setDueDate] = useState('2026-10-12')
   const [priority, setPriority] = useState('High')
   const [notes, setNotes] = useState('Visit the site, capture geotagged evidence, and report field conditions.')
@@ -28,7 +22,7 @@ export function TaskCreationModal({ open, site, onClose, onCreate }) {
 
   function submitTask(event) {
     event.preventDefault()
-    const selectedAssignee = assignees.find((item) => item.name === assignee)
+    const selectedAssignee = members.find((item) => item.name === assignee)
     onCreate({ title: title.trim(), assignee, initials: selectedAssignee.initials, dueDate, priority, notes: notes.trim() })
   }
 
@@ -45,7 +39,7 @@ export function TaskCreationModal({ open, site, onClose, onCreate }) {
           <label className="block"><span className="text-xs font-semibold text-slate-700">Task title</span><input value={title} onChange={(event) => setTitle(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{assignees.map((item) => <option key={item.name}>{item.name}</option>)}</select></label>
+            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}</select></label>
             <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Due date</span><input type="date" value={dueDate} min="2026-10-09" onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           </div>
 
