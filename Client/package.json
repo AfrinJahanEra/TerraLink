@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@emailjs/browser": "^5.0.2",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.20.0",
     "leaflet": "^1.9.4",
@@ -21,7 +23,8 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -5,12 +5,14 @@ import { PageSkeleton } from './components/ui/PageSkeleton'
 import { canAccessPath } from './constants/navigation'
 import { AppProvider } from './context/AppContext'
 import { useApp } from './hooks/useApp'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 
 function page(loader, name) {
   return lazy(() => loader().then((module) => ({ default: module[name] })))
 }
 
+const RegisterPage = page(() => import('./pages/RegisterPage'), 'RegisterPage')
 const DashboardPage = page(() => import('./pages/DashboardPage'), 'DashboardPage')
 const MapPage = page(() => import('./pages/MapPage'), 'MapPage')
 const SitesRegisterPage = page(() => import('./pages/SitesRegisterPage'), 'SitesRegisterPage')
@@ -43,7 +45,9 @@ function AppRoutes() {
   return (
     <Suspense fallback={<PageSkeleton />}>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/map" element={<MapPage />} />
