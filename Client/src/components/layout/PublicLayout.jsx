@@ -24,7 +24,7 @@ export function PublicLayout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
-      <header className="sticky top-0 z-[900] border-b border-white/10 bg-brand-950 text-white shadow-[0_1px_0_rgba(0,0,0,0.2)]">
+      <header className="sticky top-0 z-[900] border-b border-brand-800 bg-brand-700 text-white shadow-[0_1px_0_rgba(0,0,0,0.12)]">
         <div className="mx-auto flex h-14 max-w-[1480px] items-center gap-3 px-3 sm:px-5">
           <Link to={role ? '/explore' : '/'} aria-label={role ? 'TerraLink, back to the map' : 'TerraLink home'} className="flex shrink-0 items-center gap-2.5">
             <Logo inverse compact />
@@ -43,7 +43,7 @@ export function PublicLayout() {
                 {role.staff && <Link to="/dashboard" className="inline-flex h-9 items-center rounded-lg border border-white/20 px-3 text-[13px] font-semibold text-white transition hover:bg-white/10">Workspace</Link>}
                 <span className="hidden items-center gap-2.5 pl-1 md:flex">
                   <span className="grid size-8 place-items-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-900">{initialsOf(role.user.name)}</span>
-                  <span className="text-left leading-tight"><span className="block text-xs font-semibold text-white">{role.user.name}</span><span className="block text-[10px] text-brand-100/70">{role.label}</span></span>
+                  <span className="text-left leading-tight"><span className="block text-xs font-semibold text-white">{role.user.name}</span><span className="block text-[10px] text-brand-100/85">{role.label}</span></span>
                 </span>
                 <button type="button" onClick={handleSignOut} aria-label="Sign out" title="Sign out" className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/20 px-2.5 text-[13px] font-semibold text-white transition hover:bg-white/10 sm:px-3"><LogOut size={15} /><span className="hidden sm:inline">Sign out</span></button>
               </>

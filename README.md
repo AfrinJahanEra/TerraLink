@@ -42,21 +42,20 @@ Core ideas:
 - **A change is a prompt for human review, not proof.** Every satellite observation goes to a review queue where a manager records a documented decision (Confirmed for follow-up, Inconclusive, or No change) with a written reason.
 - **Every decision becomes accountable work.** Confirmed findings become field tasks with an assignee, priority, due date, estimated cost and activity history.
 - **Costs stay linked.** Each expense is tied to a task and a site, and rolls up into site budgets and programme totals. Over-budget situations are flagged straight away.
-- **Integrations sit where the work happens.** Calendar events, email notices and WhatsApp messages are actions inside tasks, meetings, budgets and reports. They are not a separate page.
+- **Integrations sit where the work happens.** Calendar events and email are actions inside tasks, meetings, budgets and reports. There is no separate integrations or settings page.
 - **Residents can report what they see.** Anyone can explore the public map. To send a photo report for a real Dhaka water body, a person signs in with the **User** role, so every report is tied to an account. Reports start as Pending and a manager verifies or rejects each one with a recorded reason.
 - **Real outlines on real imagery.** Five Dhaka water bodies are drawn from their OpenStreetMap shorelines on satellite imagery.
 - **Measured change, not invented change.** Pick a water body and two dates. TerraLink finds real Sentinel-2 scenes, measures the water inside the outline on each date, and reports the difference with its uncertainty, or says plainly that the data does not support a measurement.
 - **Verified outcome.** A verified report becomes an assigned task with a deadline, costs that need approval, completion photos, and a manager's decision on whether the problem was resolved.
 - **Bangla-first assistance.** A Bangla assistant answers operational questions, such as which tasks are pending or overdue, using only the records visible in the workspace.
-- **Reports from live state.** A printable A4 report is generated from the current workspace, including evidence, decisions, tasks, cost variance, limitations and sources.
+- **Reports from live state.** A report is generated from the current workspace, including evidence, decisions, tasks, cost variance, limitations and sources. It downloads as a PDF or is emailed to chosen people with the PDF attached.
 
 ## 3. Who It Is For
 
 | User | Need |
 |---|---|
-| **Project managers** at environmental NGOs | Review findings, approve work, control budgets, brief stakeholders |
+| **Project managers** at environmental NGOs | Review findings, assign and approve work, control budgets, brief stakeholders. They never do the field work they approve |
 | **Field coordinators** | See only their own tasks and the sites they are at, start work, submit completion photos, record field costs |
-| **Office operators** | Keep records complete: receipts, reports, schedules and team details. They see everything but do not decide, assign or approve |
 | **Programme leads and donors** | Receive clear, sourced and honest progress reports |
 | **Users** (residents and community members) | Explore the monitored water bodies, report a problem with a photo and a map pin, and follow the review status of their own reports |
 
@@ -67,7 +66,7 @@ Core ideas:
  ────────────────────          ──────────────             ────────────────
  Site flagged as          ──►  Review queue        ──►    Task created and assigned
  "Needs review"                Site review                 Field visit scheduled
-                               Documented decision        Calendar / email / WhatsApp
+                               Documented decision        Calendar / email
                                                                  │
                                                                  ▼
  Reporting                     Finance                    Verification
@@ -83,7 +82,7 @@ Core ideas:
 4. The field coordinator updates progress, adds notes and evidence, and records **actual costs**.
 5. Expenses update the **site budget** and **programme totals**. Overspending is highlighted and a budget review can be scheduled.
 6. The manager generates a **report**, shares it by email, and schedules a briefing if needed.
-7. Every action is kept in the **audit trail** and **communications log**.
+7. Each task and meeting keeps its own history of emails and calendar events.
 
 ## 5. Modules
 
@@ -110,7 +109,7 @@ The navigation is organised like an ERP, with each area of work in its own modul
 
 | Module | Description |
 |---|---|
-| **Tasks** | Board and list of assigned work. A task can come from a verified community report and keeps the link. Stages: Open, In progress, Blocked (reason required), Awaiting verification, Completed and Cancelled (reason required); overdue is a flag, not a stage. The task drawer shows the original report photo beside the completion photos, approved and pending costs against the estimate, and the manager's review. Follow-up actions: calendar deadline, .ics, email or WhatsApp reminder, field visit. |
+| **Tasks** | Board and list of assigned work. A task can come from a verified community report and keeps the link. Stages: Open, In progress, Blocked (reason required), Awaiting verification, Completed and Cancelled (reason required); overdue is a flag, not a stage. The task drawer shows the original report photo beside the completion photos, approved and pending costs against the estimate, and the manager's review. Follow-up actions: calendar deadline, .ics, email reminder, field visit. |
 | **Schedule and meetings** | Month calendar and agenda views of meetings and task deadlines. Supports field visits, review meetings, report briefings, budget reviews and team syncs, with attendees, agenda, calendar sync and invitations. |
 
 ### Finance
@@ -124,13 +123,13 @@ The navigation is organised like an ERP, with each area of work in its own modul
 
 | Module | Description |
 |---|---|
-| **Team** | Member directory with contact details, availability, WhatsApp links and live workload, calculated from open tasks. |
+| **Team** | Member directory with email, availability and live workload, calculated from open tasks. |
 
 ### Reporting
 
 | Module | Description |
 |---|---|
-| **Reports** | Generates an A4 report for a chosen site and date range: cover, observation evidence, decision, task table, cost variance, limitations, sources and sample-data disclaimer. Supports print or save as PDF, sharing by email with a cover note, and scheduling a report briefing. |
+| **Reports** | Generates a report for a chosen site and date range: key figures, water bodies, decisions, community reports, tasks, cost variance, limitations and sources. **Download PDF** saves it to the device. **Send** opens a list of people (team members plus any extra address); each person has their own Send button, and the email carries a subject, a summary table and the PDF as an attachment. A report briefing can also be scheduled. |
 | **Bangla assistant** | Guided question-and-answer in Bangla, calculated from the current workspace state, with source chips that show which records were used. When information is not available it answers clearly instead of guessing. |
 
 ### Community pages (open to everyone, reporting needs a User)
@@ -148,64 +147,59 @@ The user header is deliberately minimal: the logo returns to the map, and a sign
 
 | Module | Description |
 |---|---|
-| **Communications** | Complete log of email, calendar and WhatsApp activity with status (Sent, Opened, Failed) and error details. |
-| **Audit trail** | Chronological record of decisions, task changes, expenses, budget edits and communications across the workspace. |
-| **Settings** | Service connection status, provider credential checks, automation preferences and workspace reset. |
 
 ## 6. Roles and Permissions
 
-The prototype has three staff roles and a **User** role for the community. There is no role switcher: to use a different role, sign out and sign in again (the account menu says so). The sign-in and register screens show what the chosen role can do, fill in demo details for it, validate the fields, and keep a `next` link so a visitor returns to the page they came from. The User role has no staff workspace and lands on the community pages.
+The prototype has two staff roles and a **User** role for the community. There is no role switcher: to use a different role, sign out and sign in again (the account menu says so). The sign-in and register screens show what the chosen role can do, fill in demo details for it, validate the fields, and keep a `next` link so a visitor returns to the page they came from. The User role has no staff workspace and lands on the community pages.
 
 Each role sees only what it needs, and can do only what it is responsible for. The rules live in one table (`Client/src/constants/access.js`). The sidebar, the route guard, the data each page receives, every button, and the state functions all read from it, so the app does not merely hide a button: the action is refused too. A page outside your role shows a "not part of your role" notice and a link to what you can open, and **My role and access** (account menu or dashboard) lists what you can and cannot do.
 
 **What each role is for**
 
-| | Project Manager | Field Coordinator | Office Operator |
-|---|---|---|---|
-| Purpose | Decides, assigns and approves | Does the field work on assigned tasks | Keeps the records and the paperwork |
-| Sees | The whole programme | Only their own tasks, the sites those tasks are at, their schedule and their expenses | The whole programme, read-only on decisions |
+| | Project Manager | Field Coordinator |
+|---|---|---|
+| Purpose | Decides, assigns and approves | Does the field work on assigned tasks |
+| Sees | The whole programme | Only their own tasks, the sites those tasks are at, their schedule and their expenses |
 
 **Pages** (a page a role does not have is absent from its sidebar and blocked if opened by URL)
 
-| Page | Project Manager | Field Coordinator | Office Operator |
-|---|:---:|:---:|:---:|
-| Dashboard | Yes | Yes (my work) | Yes (records) |
-| Wetland map | Yes | My sites only | Yes |
-| Sites register, Site review | Yes | No (read-only record of a site they have a task at) | Yes, read-only |
-| Satellite comparison | Yes | No | Yes |
-| Community reports, Review queue | Yes | No | Yes, read-only |
-| Tasks | All | Own only | All, read-only |
-| Schedule and meetings | All | Own only | All |
-| Budgets | Yes | No | Yes, read-only |
-| Expenses | All | Own tasks only | All |
-| Team | Yes | No | Yes |
-| Reports | Yes | No | Yes |
-| Bangla assistant | Yes | Own tasks, no budget figures | Yes |
-| Communications, Audit trail | Yes | No | Yes |
-| Settings | Yes | No | No |
+| Page | Project Manager | Field Coordinator |
+|---|:---:|:---:|
+| Dashboard | Yes | Yes (my work) |
+| Wetland map | Yes | My sites only |
+| Sites register, Site review | Yes | No (read-only record of a site they have a task at) |
+| Satellite comparison | Yes | No |
+| Community reports, Review queue | Yes | No |
+| Tasks | All | Own only |
+| Schedule and meetings | All | Own only |
+| Budgets | Yes | No |
+| Expenses | All | Own tasks only |
+| Team | Yes | No |
+| Reports | Yes | No |
+| Bangla assistant | Yes | Own tasks, no budget figures |
 
 **Actions**
 
-| Action | Project Manager | Field Coordinator | Office Operator |
-|---|:---:|:---:|:---:|
-| Record a review decision for a site | Yes | No | No |
-| Verify or reject a community report | Yes | No | No |
-| Run a satellite comparison, save a measurement | Yes | No | Yes |
-| Create a task, assign or reassign it, change its deadline or estimate | Yes | No | No |
-| Start, block or submit completion evidence on a task | Yes | Own tasks | No |
-| Approve completion and close a task, or send it back | Yes | No | No |
-| Cancel or reopen a task | Yes | No | No |
-| Add a note to a task | Yes | Own tasks | Yes |
-| Send a reminder (email or WhatsApp) | Yes | No | Yes |
-| Record an expense (pending until approved) | Yes, approved on entry | Own tasks | Yes |
-| Approve or reject an expense | Yes | No | No |
-| Edit a budget allocation | Yes | No | No |
-| Schedule meetings and field visits | Yes | No | Yes |
-| Manage team records | Yes | No | Yes |
-| Generate and share a programme report | Yes | No | Yes |
-| Change settings, integrations, reset the workspace | Yes | No | No |
+| Action | Project Manager | Field Coordinator |
+|---|:---:|:---:|
+| Record a review decision for a site | Yes | No |
+| Verify or reject a community report | Yes | No |
+| Run a satellite comparison, save a measurement | Yes | No |
+| Create a task, assign or reassign it (to a field coordinator), change its deadline or estimate | Yes | No |
+| Start, block or submit completion evidence on a task | No (the assignee does the work) | Own tasks |
+| Approve completion and close a task, or send it back | Yes | No |
+| Cancel or reopen a task | Yes | No |
+| Add a note to a task | Yes | Own tasks |
+| Send a reminder by email | Yes | No |
+| Record an expense (pending until approved) | Yes, approved on entry | Own tasks |
+| Approve or reject an expense | Yes | No |
+| Edit a budget allocation | Yes | No |
+| Schedule meetings and field visits | Yes | No |
+| Manage team records | Yes | No |
+| Generate and share a programme report | Yes | No |
+| Reset the demo data (account menu) | Yes | No |
 
-Sample users: Nusrat Jahan (Project Manager), Rahim Uddin (Field Coordinator), Sadia Akter (Office Operator), Karim Hossain (User).
+Sample users: Nusrat Jahan (Project Manager), Rahim Uddin (Field Coordinator), Karim Hossain (User).
 
 **The User role.** The map pages (`/explore` and `/explore/:siteId`) are open to everyone. `/report` and `/my-reports` need a signed-in User: a visitor who is signed out is sent to log in or register as a User and returns to the form afterwards, and staff roles see an explanation instead of the form, because staff review reports and do not submit them. Users cannot open any staff page; those routes send them to the community map. A report stores the reporter's name and email from the account. Reviewers see them; the public map shows only "Reporter".
 
@@ -215,19 +209,18 @@ Integrations appear as actions at the point of need, not as a standalone page.
 
 | Where | Action | Service |
 |---|---|---|
-| Task drawer | Add deadline to calendar, download .ics, email reminder, WhatsApp reminder | Google Calendar, EmailJS, WhatsApp click-to-chat |
-| Task creation | Notify assignee by email, calendar and WhatsApp | EmailJS, Google Calendar, WhatsApp |
+| Task drawer | Add deadline to Google Calendar, download .ics, email reminder | Google Calendar, EmailJS |
+| Task creation | The task goes on the TerraLink schedule; optionally email the assignee and add it to Google Calendar | EmailJS, Google Calendar |
 | Site review | Schedule a field verification visit | Schedule module and Google Calendar |
 | Schedule | Create meetings, sync to calendar, send invitations | Google Calendar, EmailJS, .ics |
 | Budgets | Over-budget notice to the manager, schedule a budget review | EmailJS, Schedule module |
-| Reports | Share by email with a cover note, schedule a briefing | EmailJS, Schedule module |
+| Reports | Download PDF; email the report with the PDF attached; schedule a briefing | jsPDF, EmailJS, Schedule module |
 
 Integration behaviour:
 
-- **Google Calendar** uses OAuth through Google Identity Services. When OAuth is not configured or is declined, TerraLink falls back to a prefilled Google Calendar link so the user can still add the event.
-- **Email** is sent through EmailJS with optional per-notification templates.
-- **WhatsApp** uses click-to-chat links (`wa.me`). The message is prepared and the person reviews it before sending. Nothing is sent automatically.
-- **Failures never break the app.** Missing keys, cancelled OAuth or quota errors are recorded as Failed entries in the communications log.
+- **Google Calendar** uses OAuth through Google Identity Services. The first time an event is added, Google asks the person to sign in; after that events are created directly. When no Google client ID is configured, TerraLink opens a prefilled Google Calendar page so the person can still save the event.
+- **Email** is sent through EmailJS with optional per-notification templates. The report email sends an HTML body (greeting, summary table, water bodies and cost tables), a plain-text fallback, and the report PDF as an attachment. The EmailJS template must use `{{{message_html}}}` for the body and a variable attachment named `report_pdf`; see the environment section.
+- **Failures never break the app.** Missing keys, cancelled sign-in or quota errors are shown next to the action and recorded as Failed entries in the task's or meeting's history.
 
 ## 8. Real Services and Simulated Data
 
@@ -244,7 +237,6 @@ TerraLink is open about what is real and what is illustrative.
 | Photo evidence and community reports you submit | Real, stored in this browser only |
 | Email delivery (EmailJS) | Real, when configured |
 | Google Calendar events | Real, when configured |
-| WhatsApp messages | Real click-to-chat, sent by the user |
 | Water-area change | Real only where a comparison has been run and saved |
 | Site classifications (for example "No change") | Sample data |
 | Three seeded community reports | Sample data, without photos |
@@ -268,7 +260,7 @@ All sample content is labelled **Sample** in the interface. A prototype banner i
 | Icons | Lucide (monochrome) |
 | Email | EmailJS browser SDK |
 | Calendar | Google Identity Services and Google Calendar API v3 |
-| Messaging | WhatsApp click-to-chat |
+| PDF | jsPDF and jspdf-autotable, loaded only when a PDF is made |
 | Typography | IBM Plex Sans (interface), Hind Siliguri (Bangla) |
 | Quality | ESLint with React Hooks and React Refresh rules |
 | Hosting | Vercel (single-page application rewrites) |
@@ -278,19 +270,19 @@ All sample content is labelled **Sample** in the interface. A prototype banner i
 TerraLink is a frontend-only application. There is no backend server in this prototype.
 
 **State management**
-- A single `AppContext` uses `useReducer` to hold sites, review decisions, tasks, meetings, expenses, budgets, team members, notification logs and settings.
+- A single `AppContext` uses `useReducer` to hold sites, review decisions, tasks, meetings, expenses, budgets, team members and notification logs.
 - Workspace state is saved to `localStorage` under `terralink.workspace.v1`, so work is kept across page reloads and screens.
 - Decisions recorded on a site override that site's sample status. Every module (map, register, review queue, dashboard and reports) reads from the same state.
 
 **Services layer**
 - `services/email.js`: EmailJS dispatch with template routing and safe failure handling.
 - `services/calendar.js`: Google OAuth token flow, event creation and the prefilled-link fallback.
-- `services/whatsapp.js`: validated click-to-chat link generation.
-- Every outbound action writes a structured entry to the communications log.
+- `services/reportPdf.js`: builds the report PDF, for download and as an email attachment.
+- Every outbound email and calendar action writes a structured entry that the task or meeting drawer shows as its history.
 
 **Routing and navigation**
 - One navigation configuration drives both the sidebar and the page titles.
-- Role-restricted routes (Communications, Audit trail, Settings) are guarded.
+- Role-restricted routes are guarded by the access table.
 - Drawers and forms are driven by the URL (for example `/tasks?task=TL-104` or `/schedule?new=field_visit&site=pond-a`), so any record or action can be linked directly from another module.
 
 **Time and locale**
@@ -331,7 +323,6 @@ Prototype/
         │   ├── budget/        Allocation and expense forms, planned vs actual chart
         │   ├── communications/ Communication history
         │   ├── dashboard/     KPI cards, snapshots, schedule, insights
-        │   ├── integrations/  Service cards, notification log
         │   ├── layout/        Sidebar, top bar, banner, about panel, public layout
         │   ├── login/         Landing and sign-in visuals
         │   ├── map/           Wetland map, site panel, shared map explorer
@@ -347,8 +338,8 @@ Prototype/
         ├── data/              Water-body outlines, sample sites, tasks, team, budgets, expenses, sample reports
         ├── hooks/             useApp, useNotice, useClickOutside, useLocalStorage
         ├── pages/             One page per module
-        ├── services/          Email, calendar, WhatsApp, photo storage, Sentinel-2 analysis and observation cache
-        └── utils/             Formatting, schedule, audit, communications helpers
+        ├── services/          Email, calendar, report PDF, photo storage, Sentinel-2 analysis and observation cache
+        └── utils/             Formatting, schedule, report and communications helpers
 ```
 
 ## 12. Getting Started
@@ -382,7 +373,7 @@ Open `http://localhost:5173` and choose a role on the sign-in screen.
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | Run ESLint across the project |
 
-The application works without any environment variables. Integrations then fall back safely: calendar actions open a prefilled Google Calendar page, and email attempts are logged as Failed with an explanation.
+The application works without any environment variables. Integrations then fall back safely: calendar actions open a prefilled Google Calendar page, and email shows a clear "email is not set up" message instead of sending. Download PDF works without any setup.
 
 ## 13. Environment Configuration
 
@@ -403,6 +394,8 @@ Copy `.env.example` to `.env` inside `Client/` and fill in the values you need.
 | `VITE_GOOGLE_CLIENT_ID` | Calendar | Google Cloud OAuth Web client ID |
 
 **EmailJS template variables:** `to_name`, `to_email`, `subject`, `message`, `notification_type`, `task_id`, `task_title`, `site_name`, `assignee_name`, `due_date`, `action_url`.
+
+**Report email template.** Create an EmailJS template (set it as `VITE_EMAILJS_TEMPLATE_REPORT_SUMMARY_ID`, or use the default) with To = `{{to_email}}`, Subject = `{{subject}}`, and an HTML body that contains `{{{message_html}}}` (three braces, so the table is not escaped). Under Attachments add a **Variable attachment** with parameter `report_pdf` and file name `{{report_filename}}`. The PDF is about 10 KB and the whole request about 20 KB, which fits the free plan's 50 KB request limit.
 
 **Google Calendar setup**
 1. Create a project in Google Cloud Console and enable the Google Calendar API.
@@ -435,10 +428,9 @@ A timed 5 to 7 minute walkthrough is available in [`Client/docs/DEMO_SCRIPT.md`]
 6. **Sign out and sign in as Field Coordinator:** start the work, add an expense (it stays pending), and submit completion photos.
 7. **Verification and cost:** as Project Manager, approve the expense, send the work back once, then approve it with the outcome Resolved. Show the before and after photos and the report marked Resolved.
 8. **Bangla assistant:** ask "কোন কাজ বাকি?" and "কোন task overdue?".
-9. **Reports:** generate, print and share the report.
-10. **Communications and Audit trail:** show the full record of actions.
+9. **Reports:** generate the report, download the PDF and send it to a person by email.
 
-Edge cases worth showing: Gol Talab (insufficient data because it is under one hectare), a report pinned outside every outline (saved as a location-based report), a rejected report (hidden from the public map, kept in the audit trail), and a reduced budget allocation (over-budget state).
+Edge cases worth showing: Gol Talab (insufficient data because it is under one hectare), a report pinned outside every outline (saved as a location-based report), a rejected report (hidden from the public map, kept in the review queue), and a reduced budget allocation (over-budget state).
 
 ## 16. Design Principles
 
@@ -457,7 +449,7 @@ Edge cases worth showing: Gol Talab (insufficient data because it is under one h
 - A change seen in imagery, or a photo from a resident, is **a reason to investigate**. It is not proof of encroachment, ecological loss or legal non-compliance. Field verification and human judgement are always required.
 - Optical satellite imagery is affected by cloud, shadow, seasonal water levels and resolution limits. TerraLink picks the clearest scene, leaves cloud and shadow pixels out, and reports how many usable pixels there were. A water body under one hectare, or a comparison whose dates are far apart in the seasonal cycle, is reported as not reliable.
 - Site classifications, tasks, budgets and team records in this prototype are **sample data**.
-- Data is stored in the user's browser only. Photos are kept in the browser's IndexedDB and reports in local storage. Clearing browser storage or using Reset in Settings restores the original sample workspace and removes uploaded photos. Reports are not shared between devices.
+- Data is stored in the user's browser only. Photos are kept in the browser's IndexedDB and reports in local storage. Clearing browser storage or using **Reset demo data** in the account menu restores the original sample workspace and removes uploaded photos. Reports are not shared between devices.
 - Water-body outlines come from OpenStreetMap contributors and are simplified. They are not an official survey, so each boundary is marked unverified.
 - A water body under about one hectare is only a few 10 m satellite pixels wide. TerraLink marks such sites (Gol Talab) as Insufficient data and points to field evidence instead.
 - A verified community report means its evidence was reviewed. It does not by itself establish the condition of the whole water body.
@@ -470,11 +462,10 @@ Edge cases worth showing: Gol Talab (insufficient data because it is under one h
 | Data | Validate the NDWI measurement against surveyed boundaries and add MNDWI, multi-year trends and scheduled monitoring |
 | Platform | Backend API and shared database so reports sync across devices, object storage for photos, real authentication and organisation accounts |
 | Field | Offline-capable mobile capture, photo EXIF location checks and duplicate-report detection |
-| Messaging | WhatsApp Business Cloud API with consent management |
 | Intelligence | Bangla language model assistant grounded on workspace records |
 | Finance | Approval workflows, receipts and donor-specific budget lines |
 | Reporting | Scheduled reports, donor templates and data export |
-| Collaboration | Reporter follow-up by SMS or WhatsApp, and multi-organisation sharing |
+| Collaboration | Reporter follow-up by SMS, and multi-organisation sharing |
 
 ## 19. Team
 

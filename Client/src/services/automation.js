@@ -1,4 +1,5 @@
 import {
+  connectGoogleCalendar,
   createCalendarEventLink,
   createDeadlineEvent,
   createGoogleCalendarLink,
@@ -6,7 +7,7 @@ import {
   insertCalendarEvent,
 } from './calendar'
 import { emailTemplates, getEmailConfiguration } from './email'
-import { createWhatsAppLink, getMeetingLink, getTaskLink, openWhatsApp } from './whatsapp'
+import { getMeetingLink, getReportsLink, getTaskLink } from './links'
 
 function logId() {
   return `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -30,7 +31,10 @@ export function createLog(fields) {
 }
 
 function errorMessage(error) {
-  return error instanceof Error ? error.message : 'The integration request failed.'
+  if (error instanceof Error) return error.message
+  // EmailJS rejects with { status, text } rather than an Error.
+  if (error?.text) return `${error.text}${error.status ? ` (status ${error.status})` : ''}`
+  return 'The request failed.'
 }
 
 async function attempt(record, fields, action, failureFields = {}) {
@@ -46,36 +50,21 @@ async function attempt(record, fields, action, failureFields = {}) {
   }
 }
 
-function prepareWhatsApp(record, { phone, recipientName, type, details, language, fields, detail, open = false }) {
-  try {
-    const prepared = createWhatsAppLink({ phone, type, details, language })
-    if (open) openWhatsApp(prepared.url)
-    const log = createLog({
-      ...fields,
-      recipient: `${recipientName} · ${phone}`,
-      channel: 'WhatsApp',
-      message: prepared.message,
-      status: open ? 'Opened' : 'Sent',
-      detail,
-      actionUrl: prepared.url,
-    })
-    record(log)
-    return log
-  } catch (error) {
-    const log = createLog({ ...fields, recipient: recipientName, channel: 'WhatsApp', status: 'Failed', detail: errorMessage(error) })
-    record(log)
-    return log
-  }
+/** Opens the Google sign-in prompt the first time, then reuses the session token. Must start from a click. */
+async function ensureGoogleCalendar() {
+  const google = getGoogleCalendarConfiguration()
+  if (!google.configured) throw new Error('Google Calendar is not set up for this workspace.')
+  if (!google.connected) await connectGoogleCalendar()
 }
 
-/* Rule-based automations ------------------------------------------------- */
+/* Automations: what happens on its own when work is created or finished ---- */
 
-export async function automateTaskAssignment({ task, assignee, site, settings, record }) {
+export async function automateTaskAssignment({ task, assignee, site, record }) {
   const actions = []
   const actionUrl = getTaskLink(task)
   const base = { taskId: task.id, source: 'Tasks' }
 
-  if (settings.rules.taskAssignedEmail && task.notifications?.email) {
+  if (task.notifications?.email) {
     actions.push(attempt(record, {
       ...base,
       recipient: `${assignee?.name ?? task.assignee} · ${assignee?.email ?? 'No email'}`,
@@ -91,40 +80,28 @@ export async function automateTaskAssignment({ task, assignee, site, settings, r
     })))
   }
 
-  if (settings.rules.taskAssignedCalendar && task.notifications?.calendar) {
+  if (task.notifications?.calendar) {
     const fallbackUrl = createGoogleCalendarLink(task)
     actions.push(attempt(record, {
       ...base,
-      recipient: 'Connected Google account',
+      recipient: 'Google Calendar',
       channel: 'Calendar',
       message: `Deadline event: ${task.id} · ${task.dueDate}`,
       actionUrl: fallbackUrl,
     }, async () => {
-      if (!getGoogleCalendarConfiguration().connected) {
-        throw new Error('Google Calendar is not connected. Use “Add deadline to calendar” on the task to open a prefilled event.')
+      if (!getGoogleCalendarConfiguration().configured) {
+        throw new Error('Google Calendar is not set up. Use “Add deadline to Google Calendar” on the task to open a prefilled event.')
       }
+      await ensureGoogleCalendar()
       const event = await createDeadlineEvent(task)
       return { logFields: { actionUrl: event.htmlLink ?? fallbackUrl, detail: 'Event created with a one-day popup reminder.' } }
     }, { actionUrl: fallbackUrl }))
   }
 
-  if (settings.rules.taskAssignedWhatsapp && task.notifications?.whatsapp) {
-    prepareWhatsApp(record, {
-      phone: assignee?.whatsapp,
-      recipientName: assignee?.name ?? task.assignee,
-      type: 'task_assign',
-      details: { task },
-      language: settings.language,
-      fields: { ...base, message: `Task assignment: ${task.id}` },
-      detail: 'Click-to-chat message prepared; open it from Communications.',
-    })
-  }
-
-  await Promise.allSettled(actions)
+  return Promise.all(actions)
 }
 
-export async function automateBudgetOverrun({ site, planned, actual, manager, settings, record }) {
-  if (!settings.rules.overBudgetEmail) return
+export async function automateBudgetOverrun({ site, planned, actual, manager, record }) {
   await attempt(record, {
     recipient: `${manager.name} · ${manager.email}`,
     channel: 'Email',
@@ -141,64 +118,34 @@ export async function automateBudgetOverrun({ site, planned, actual, manager, se
   }))
 }
 
-export async function automateTaskCompletion({ task, manager, settings, record }) {
+export async function automateTaskCompletion({ task, manager, record }) {
+  if (!task.notifications?.email) return
   const actionUrl = getTaskLink(task)
-  const actions = []
-  const base = { taskId: task.id, source: 'Tasks' }
-
-  if (settings.rules.taskCompleteEmail && task.notifications?.email) {
-    actions.push(attempt(record, {
-      ...base,
-      recipient: `${manager.name} · ${manager.email}`,
-      channel: 'Email',
-      message: `Reported complete: ${task.id} · ${task.title}`,
-      actionUrl,
-    }, () => emailTemplates.taskComplete({
-      toName: manager.name,
-      toEmail: manager.email,
-      task,
-      actionUrl,
-    })))
-  }
-
-  if (settings.rules.taskCompleteWhatsapp && task.notifications?.whatsapp) {
-    prepareWhatsApp(record, {
-      phone: manager.whatsapp,
-      recipientName: manager.name,
-      type: 'task_complete',
-      details: { task },
-      language: settings.language,
-      fields: { ...base, message: `Reported complete: ${task.id}` },
-      detail: 'Click-to-chat completion message prepared.',
-    })
-  }
-
-  await Promise.allSettled(actions)
-}
-
-export function automateOverdueTask({ task, assignee, settings, record }) {
-  if (!settings.rules.overdueWhatsapp || !task.notifications?.whatsapp) return
-  prepareWhatsApp(record, {
-    phone: assignee?.whatsapp,
-    recipientName: assignee?.name ?? task.assignee,
-    type: 'overdue',
-    details: { task },
-    language: settings.language,
-    fields: { taskId: task.id, source: 'Tasks', message: `Overdue reminder: ${task.id}` },
-    detail: 'Overdue click-to-chat reminder prepared.',
-  })
+  await attempt(record, {
+    taskId: task.id,
+    source: 'Tasks',
+    recipient: `${manager.name} · ${manager.email}`,
+    channel: 'Email',
+    message: `Reported complete: ${task.id} · ${task.title}`,
+    actionUrl,
+  }, () => emailTemplates.taskComplete({
+    toName: manager.name,
+    toEmail: manager.email,
+    task,
+    actionUrl,
+  }))
 }
 
 /* Contextual actions started by a person from a workflow ------------------ */
 
 /**
- * Opens the prefilled Google Calendar page synchronously (so the browser keeps
- * the user gesture) unless OAuth is connected, in which case the event is created directly.
+ * Adds an event to Google Calendar. With Google set up it signs in on first use and creates the event directly;
+ * without it, it opens the prefilled Google Calendar page. Call it straight from a click so the browser allows the popup.
  */
 export function addEventToCalendar({ event, fields, record }) {
   const fallbackUrl = createCalendarEventLink(event)
 
-  if (!getGoogleCalendarConfiguration().connected) {
+  if (!getGoogleCalendarConfiguration().configured) {
     window.open(fallbackUrl, '_blank', 'noopener,noreferrer')
     const log = createLog({
       ...fields,
@@ -214,10 +161,11 @@ export function addEventToCalendar({ event, fields, record }) {
 
   return attempt(record, {
     ...fields,
-    recipient: 'Connected Google account',
+    recipient: 'Google Calendar',
     channel: 'Calendar',
     actionUrl: fallbackUrl,
   }, async () => {
+    await ensureGoogleCalendar()
     const created = await insertCalendarEvent(event)
     return { logFields: { actionUrl: created.htmlLink ?? fallbackUrl, detail: 'Event created in Google Calendar with a reminder.' } }
   }, { actionUrl: fallbackUrl }).then((log) => ({ mode: log.status === 'Failed' ? 'failed' : 'api', log, url: log.actionUrl }))
@@ -237,7 +185,7 @@ async function emailMany(record, { recipients, fields, send }) {
       recipient: recipients.map((member) => member.name).join(', '),
       channel: 'Email',
       status: 'Failed',
-      detail: `EmailJS is not configured. Missing ${config.missing.join(', ')}.`,
+      detail: `Email is not set up. Missing ${config.missing.join(', ')}.`,
     })
     record(log)
     return [log]
@@ -258,19 +206,6 @@ export function emailMeetingInvites({ meeting, attendees, summary, record }) {
   })
 }
 
-export function whatsappMeetingReminder({ meeting, member, dateLabel, timeRange, language, record }) {
-  return prepareWhatsApp(record, {
-    phone: member?.whatsapp,
-    recipientName: member?.name ?? 'Attendee',
-    type: 'meeting',
-    details: { meeting, dateLabel, timeRange },
-    language,
-    fields: { meetingId: meeting.id, taskId: meeting.taskId ?? '', source: 'Schedule' },
-    detail: 'Meeting reminder opened in WhatsApp for confirmation.',
-    open: true,
-  })
-}
-
 export function emailTaskReminder({ task, assignee, record }) {
   const actionUrl = getTaskLink(task)
   return attempt(record, {
@@ -283,88 +218,27 @@ export function emailTaskReminder({ task, assignee, record }) {
   }, () => emailTemplates.taskReminder({ toName: assignee?.name ?? task.assignee, toEmail: assignee?.email, task, actionUrl }))
 }
 
-export function whatsappTaskReminder({ task, assignee, language, record }) {
-  return prepareWhatsApp(record, {
-    phone: assignee?.whatsapp,
-    recipientName: assignee?.name ?? task.assignee,
-    type: 'task_reminder',
-    details: { task },
-    language,
-    fields: { taskId: task.id, source: 'Tasks' },
-    detail: 'Task reminder opened in WhatsApp for confirmation.',
-    open: true,
-  })
-}
-
-export function emailReportToRecipients({ recipients, reportTitle, summary, note, record }) {
-  const actionUrl = `${window.location.origin}/reports`
+/**
+ * Emails the report to each recipient: a subject, an HTML body with a summary table, a plain-text fallback,
+ * and the PDF attached. `html(recipient)` builds the body so every email can greet the person by name.
+ */
+export function emailReportToRecipients({ recipients, reportTitle, subject, summary, html, attachment, note, record }) {
+  const actionUrl = getReportsLink()
   const message = note ? `${note}\n\n${summary}` : summary
   return emailMany(record, {
     recipients,
-    fields: { message: `Report shared: ${reportTitle}`, source: 'Reports', actionUrl },
+    fields: { message: `Report sent: ${reportTitle}`, source: 'Reports', actionUrl },
     send: (member) => emailTemplates.reportSummary({
       toName: member.name,
       toEmail: member.email,
-      subject: `TerraLink report: ${reportTitle}`,
+      subject,
       message,
       actionUrl,
+      extraParams: {
+        message_html: html(member),
+        report_filename: attachment.filename,
+        report_pdf: attachment.dataUri,
+      },
     }),
   })
-}
-
-export async function runIntegrationTest({ service, manager, settings, record }) {
-  const testTask = {
-    id: 'TEST-001',
-    title: 'Integration connection test',
-    description: 'This test verifies the TerraLink notification connection.',
-    site: 'TerraLink workspace',
-    assignee: manager.name,
-    dueDate: new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
-  }
-  const settingsUrl = `${window.location.origin}/settings`
-
-  if (service === 'email') {
-    return attempt(record, {
-      recipient: `${manager.name} · ${manager.email}`,
-      channel: 'Email',
-      message: 'Connection test from TerraLink',
-      actionUrl: settingsUrl,
-      source: 'Settings',
-    }, () => emailTemplates.reportSummary({
-      toName: manager.name,
-      toEmail: manager.email,
-      subject: 'TerraLink EmailJS connection test',
-      message: 'EmailJS is connected. TerraLink can deliver task, meeting, budget, completion, and report emails.',
-      actionUrl: settingsUrl,
-    }))
-  }
-
-  if (service === 'calendar') {
-    const fallbackUrl = createGoogleCalendarLink(testTask)
-    return attempt(record, {
-      recipient: 'Connected Google account',
-      channel: 'Calendar',
-      message: 'Google Calendar connection test',
-      actionUrl: fallbackUrl,
-      source: 'Settings',
-    }, async () => {
-      if (!getGoogleCalendarConfiguration().connected) throw new Error('Connect Google Calendar before sending a test event.')
-      const event = await createDeadlineEvent(testTask)
-      return { logFields: { actionUrl: event.htmlLink ?? fallbackUrl, detail: 'Test event created with a one-day reminder.' } }
-    }, { actionUrl: fallbackUrl })
-  }
-
-  if (service === 'whatsapp') {
-    return prepareWhatsApp(record, {
-      phone: manager.whatsapp,
-      recipientName: manager.name,
-      type: 'test',
-      language: settings.language,
-      fields: { source: 'Settings' },
-      detail: 'Click-to-chat test opened in a new tab.',
-      open: true,
-    })
-  }
-
-  throw new Error(`Unknown integration service: ${service}.`)
 }

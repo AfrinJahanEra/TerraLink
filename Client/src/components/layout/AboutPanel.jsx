@@ -10,9 +10,8 @@ const sections = [
       'Dated Sentinel-2 L2A scenes, read from the public archive and measured in your browser',
       'Water-body outlines from OpenStreetMap (community-mapped, unverified)',
       'Photo reports saved in your browser with the evidence you upload',
-      'EmailJS delivery when project credentials are configured',
+      'EmailJS delivery, with the report PDF attached, when project credentials are configured',
       'Google Identity Services OAuth and Google Calendar API events',
-      'WhatsApp wa.me click-to-chat links that a person confirms',
     ],
   },
   {

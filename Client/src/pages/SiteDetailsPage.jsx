@@ -21,7 +21,7 @@ import { METHOD } from '../constants/observations'
 import { useApp } from '../hooks/useApp'
 import { useNotice } from '../hooks/useNotice'
 import { buildScheduleLink } from '../utils/schedule'
-import { createActivity, formatTaskDate } from '../utils/tasks'
+import { assignableMembers, createActivity, formatTaskDate } from '../utils/tasks'
 
 function ReadOnlyReview({ role, decision, siteId, scheduleVisitLink }) {
   return (
@@ -118,7 +118,7 @@ export function SiteDetailsPage() {
       status: 'open',
       estimatedCost: 0,
       assignedBy: role.user.name,
-      notifications: { email: true, calendar: true, whatsapp: true },
+      notifications: { email: true, calendar: true },
       comments: [],
       activityHistory: [createActivity(`Task created from ${site.name} analysis`, role.user.name)],
       createdAt: new Date().toISOString(),
@@ -152,7 +152,7 @@ export function SiteDetailsPage() {
 
       {can('community.view') && <SiteReports site={site} reports={scope.communityReports.filter((report) => report.siteId === site.id)} onOpen={(id) => navigate(`/community?report=${id}`)} />}
 
-      <TaskCreationModal open={taskOpen} site={site} members={teamMembers} onClose={() => setTaskOpen(false)} onCreate={handleCreateTask} />
+      <TaskCreationModal open={taskOpen} site={site} members={assignableMembers(teamMembers)} onClose={() => setTaskOpen(false)} onCreate={handleCreateTask} />
 
       <Toast message={notice} />
     </div>

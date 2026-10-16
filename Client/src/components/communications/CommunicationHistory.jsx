@@ -1,8 +1,8 @@
-import { CalendarDays, Mail, MessageCircle, Radio } from 'lucide-react'
+import { CalendarDays, Mail, Radio } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { formatLogTimestamp, LOG_STATUS_STYLES } from '../../utils/communications'
 
-const channelIcons = { Email: Mail, Calendar: CalendarDays, WhatsApp: MessageCircle }
+const channelIcons = { Email: Mail, Calendar: CalendarDays }
 
 export function CommunicationHistory({ logs, emptyText = 'No calendar events, emails, or reminders yet.', limit = 6 }) {
   const visible = logs.slice(0, limit)

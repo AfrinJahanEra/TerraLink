@@ -15,7 +15,7 @@ import { useApp } from '../hooks/useApp'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useNotice } from '../hooks/useNotice'
 import { cn } from '../utils/cn'
-import { describeCalendarResult, describeEmailResult, describeWhatsAppResult } from '../utils/communications'
+import { describeCalendarResult, describeEmailResult } from '../utils/communications'
 import {
   addDaysToKey,
   buildScheduleItems,
@@ -39,7 +39,7 @@ const legend = [
 export function SchedulePage() {
   const {
     role, can, scope, sites, teamMembers, notificationLogs,
-    createMeeting, updateMeeting, addMeetingToCalendar, downloadMeetingIcs, emailMeetingInvites, whatsappMeetingReminder,
+    createMeeting, updateMeeting, addMeetingToCalendar, downloadMeetingIcs, emailMeetingInvites,
   } = useApp()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -260,7 +260,6 @@ export function SchedulePage() {
           onAddToCalendar={() => addMeetingToCalendar(selectedMeeting).then((result) => showNotice(describeCalendarResult(result)))}
           onDownloadIcs={() => { downloadMeetingIcs(selectedMeeting); showNotice('Calendar file downloaded for Outlook, Apple, or Google Calendar.') }}
           onEmailInvites={() => emailMeetingInvites(selectedMeeting).then((logs) => showNotice(describeEmailResult(logs, 'invitation')))}
-          onWhatsApp={(attendeeId) => showNotice(describeWhatsAppResult(whatsappMeetingReminder(selectedMeeting, attendeeId)))}
           onUpdateStatus={handleStatus}
         />
       )}

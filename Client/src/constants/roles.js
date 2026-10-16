@@ -1,4 +1,4 @@
-import { ClipboardCheck, ShieldCheck, UserCog, UserRound } from 'lucide-react'
+import { ClipboardCheck, ShieldCheck, UserRound } from 'lucide-react'
 
 export const ROLES = {
   manager: {
@@ -27,19 +27,6 @@ export const ROLES = {
       'Record actual field expenses',
     ],
     user: { name: 'Rahim Uddin', email: 'coordinator@terralink.demo' },
-  },
-  operator: {
-    id: 'operator',
-    label: 'Office Operator',
-    description: 'Keep task, team and expense records on behalf of the field team.',
-    icon: UserCog,
-    staff: true,
-    capabilities: [
-      'Maintain task and team records',
-      'Enter evidence and expense records',
-      'Prepare programme reports',
-    ],
-    user: { name: 'Sadia Akter', email: 'operator@terralink.demo' },
   },
   user: {
     id: 'user',

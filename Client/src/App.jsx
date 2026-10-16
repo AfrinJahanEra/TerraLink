@@ -32,9 +32,6 @@ const ExpensesPage = page(() => import('./pages/ExpensesPage'), 'ExpensesPage')
 const TeamPage = page(() => import('./pages/TeamPage'), 'TeamPage')
 const ReportPage = page(() => import('./pages/ReportPage'), 'ReportPage')
 const AssistantPage = page(() => import('./pages/AssistantPage'), 'AssistantPage')
-const CommunicationsPage = page(() => import('./pages/CommunicationsPage'), 'CommunicationsPage')
-const AuditTrailPage = page(() => import('./pages/AuditTrailPage'), 'AuditTrailPage')
-const SettingsPage = page(() => import('./pages/SettingsPage'), 'SettingsPage')
 
 function ActionRedirect() {
   const { taskId } = useParams()
@@ -80,10 +77,6 @@ function AppRoutes() {
           <Route path="/team" element={<TeamPage />} />
           <Route path="/reports" element={<ReportPage />} />
           <Route path="/assistant" element={<AssistantPage />} />
-          <Route path="/communications" element={<CommunicationsPage />} />
-          <Route path="/audit" element={<AuditTrailPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/integrations" element={<Navigate to="/settings?tab=services" replace />} />
         </Route>
         <Route path="*" element={<Navigate to={role ? homePathFor(role.id) : '/login'} replace />} />
       </Routes>

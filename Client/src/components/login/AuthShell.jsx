@@ -9,7 +9,6 @@ import { Logo } from '../brand/Logo'
 const TAGLINES = {
   manager: 'Reviews and approves',
   coordinator: 'Field work and costs',
-  operator: 'Records and reports',
   user: 'Reports problems',
 }
 
@@ -137,7 +136,7 @@ export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
                     const Icon = item.icon
                     const active = role === item.id
                     return (
-                      <button key={item.id} type="button" onClick={() => chooseRole(item.id)} aria-pressed={active} className={cn('flex items-center gap-2.5 rounded-lg border p-2.5 text-left transition', active ? 'border-brand-600 bg-brand-50/70 ring-1 ring-brand-600/20' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50')}>
+                      <button key={item.id} type="button" onClick={() => chooseRole(item.id)} aria-pressed={active} className={cn('flex items-center gap-2.5 rounded-lg border p-2.5 text-left transition last:odd:col-span-2', active ? 'border-brand-600 bg-brand-50/70 ring-1 ring-brand-600/20' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50')}>
                         <span className={cn('grid size-8 shrink-0 place-items-center rounded-md', active ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-500')}><Icon size={16} /></span>
                         <span className="min-w-0"><span className="block text-[13px] font-semibold leading-4 text-slate-900">{item.label}</span><span className="mt-0.5 block text-[11px] leading-4 text-slate-500">{TAGLINES[item.id]}</span></span>
                       </button>

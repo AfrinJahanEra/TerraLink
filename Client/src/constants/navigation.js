@@ -5,15 +5,12 @@ import {
   ChartNoAxesCombined,
   ClipboardCheck,
   FileText,
-  History,
   Layers,
   LayoutDashboard,
   ListChecks,
   MapPinned,
-  Megaphone,
   ReceiptText,
   Satellite,
-  Settings,
   TableProperties,
   Users,
 } from 'lucide-react'
@@ -46,11 +43,6 @@ export const NAV_ITEMS = [
   { label: 'Reporting', items: [
     { label: 'Reports', path: '/reports', icon: FileText, permission: 'reports.view' },
     { label: 'Bangla assistant', path: '/assistant', icon: BotMessageSquare, permission: 'assistant.use' },
-  ] },
-  { label: 'Administration', items: [
-    { label: 'Communications', path: '/communications', icon: Megaphone, permission: 'comms.view' },
-    { label: 'Audit trail', path: '/audit', icon: History, permission: 'audit.view' },
-    { label: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' },
   ] },
 ]
 

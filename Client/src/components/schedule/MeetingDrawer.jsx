@@ -1,4 +1,5 @@
 import { can } from '../../constants/access'
+import { canAccessPath } from '../../constants/navigation'
 import {
   CalendarCheck,
   CalendarDays,
@@ -8,7 +9,6 @@ import {
   ExternalLink,
   Mail,
   MapPin,
-  MessageCircle,
   Radio,
   UserRound,
   X,
@@ -34,7 +34,7 @@ function ActionButton({ icon: Icon, children, onClick, disabled }) {
   )
 }
 
-export function MeetingDrawer({ meeting, role, members, sites, tasks, logs, onClose, onAddToCalendar, onDownloadIcs, onEmailInvites, onWhatsApp, onUpdateStatus }) {
+export function MeetingDrawer({ meeting, role, members, sites, tasks, logs, onClose, onAddToCalendar, onDownloadIcs, onEmailInvites, onUpdateStatus }) {
   const [sending, setSending] = useState(false)
   const canManage = can(role.id, 'schedule.manage')
   const type = MEETING_TYPES[meeting.type]
@@ -87,7 +87,7 @@ export function MeetingDrawer({ meeting, role, members, sites, tasks, logs, onCl
 
           {(site || task) && (
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
-              {site && <Link to={`/sites/${site.id}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><MapPin size={14} className="text-slate-500" />{site.name} site record</Link>}
+              {site && (canAccessPath(role.id, `/sites/${site.id}`) ? <Link to={`/sites/${site.id}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><MapPin size={14} className="text-slate-500" />{site.name} site record</Link> : <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500"><MapPin size={14} className="text-slate-400" />{site.name}</span>)}
               {task && <Link to={`/tasks?task=${task.id}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><CalendarCheck size={14} className="text-slate-500" />{task.id} · {task.title}</Link>}
             </div>
           )}
@@ -112,7 +112,6 @@ export function MeetingDrawer({ meeting, role, members, sites, tasks, logs, onCl
                 <li key={member.id} className="flex items-center gap-3 px-3 py-2.5">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600">{member.initials}</span>
                   <div className="min-w-0 flex-1"><p className="truncate text-xs font-medium text-slate-800">{member.name}</p><p className="truncate text-[10px] text-slate-400">{member.role} · {member.email}</p></div>
-                  {canManage && isScheduled && <button type="button" onClick={() => onWhatsApp(member.id)} aria-label={`Send WhatsApp reminder to ${member.name}`} title="WhatsApp reminder" className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"><MessageCircle size={15} /></button>}
                 </li>
               ))}
               {!attendees.length && <li className="px-3 py-3 text-[11px] text-slate-400">No attendees selected.</li>}

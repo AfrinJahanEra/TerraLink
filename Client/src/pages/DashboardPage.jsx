@@ -5,7 +5,6 @@ import {
   ClipboardCheck,
   Droplets,
   FileClock,
-  Files,
   OctagonAlert,
   ReceiptText,
   RotateCcw,
@@ -61,19 +60,8 @@ const VIEWS = {
     priorityLink: '/tasks',
     priorityLinkLabel: 'My tasks',
   },
-  operator: {
-    guidance: 'Keep records complete: receipts, reports, schedules and team details. Read-only on decisions.',
-    mapTitle: 'Wetland monitoring map',
-    mapHint: 'Read-only overview of every water body',
-    taskTitle: 'Tasks across the programme',
-    taskSubtitle: 'Read-only; the manager assigns and closes them',
-    priorityTitle: 'Records to follow up',
-    priorityLink: '/expenses',
-    priorityLinkLabel: 'Expenses',
-  },
 }
 
-const hasReceipt = (expense) => Boolean(expense.receiptNote?.trim()) || Boolean(expense.receiptPhotos?.length)
 const sumAmount = (list) => list.reduce((total, expense) => total + Number(expense.amount || 0), 0)
 
 function buildKpis(roleId, { scope, budgetSummary }) {
@@ -87,14 +75,6 @@ function buildKpis(roleId, { scope, budgetSummary }) {
       { label: 'Due today or overdue', value: open.filter((task) => task.due === 'Today' || isTaskOverdue(task)).length, detail: 'Do these first', icon: FileClock, to: '/tasks' },
       { label: 'Awaiting verification', value: scope.tasks.filter((task) => task.status === 'awaiting_verification').length, detail: 'Waiting for the manager', icon: ShieldCheck, to: '/tasks' },
       { label: 'Expenses pending', value: formatBdt(sumAmount(pendingExpenses)), detail: `${pendingExpenses.length} awaiting approval`, icon: ReceiptText, to: '/expenses' },
-    ]
-  }
-  if (roleId === 'operator') {
-    return [
-      { label: 'Site records', value: scope.sites.length, detail: 'In the register', icon: Files, to: '/sites' },
-      { label: 'Reports with the manager', value: awaitingReports, detail: 'Pending or under review', icon: Camera, to: '/community' },
-      { label: 'Expenses pending', value: pendingExpenses.length, detail: 'Awaiting manager approval', icon: ReceiptText, to: '/expenses' },
-      { label: 'Without a receipt', value: scope.expenses.filter((expense) => !hasReceipt(expense)).length, detail: 'Records to complete', icon: CircleAlert, to: '/expenses' },
     ]
   }
   return [
@@ -116,14 +96,6 @@ function buildPriorities(roleId, { scope, siteName }) {
       ...mine.filter((task) => task.status === 'blocked').map((task) => taskItem(task, `${task.title} is blocked`, OctagonAlert)),
       ...mine.filter(isTaskOverdue).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
       ...mine.filter((task) => task.due === 'Today' && !isTaskOverdue(task) && task.status !== 'awaiting_verification' && task.status !== 'completed').map((task) => taskItem(task, `${task.title} is due today`, FileClock)),
-    ].slice(0, 6)
-  }
-
-  if (roleId === 'operator') {
-    return [
-      ...scope.expenses.filter((expense) => expense.approvalStatus === 'pending').slice(0, 3).map((expense) => ({ id: expense.id, title: `${expense.id} is waiting for approval`, detail: `${formatBdt(expense.amount)} · ${expense.description}`, to: '/expenses', icon: ReceiptText })),
-      ...scope.expenses.filter((expense) => !hasReceipt(expense)).slice(0, 3).map((expense) => ({ id: `${expense.id}-receipt`, title: `${expense.id} has no receipt`, detail: `${formatBdt(expense.amount)} · ${expense.description}`, to: '/expenses', icon: CircleAlert })),
-      ...scope.tasks.filter(isTaskOverdue).slice(0, 2).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
     ].slice(0, 6)
   }
 
@@ -212,7 +184,7 @@ export function DashboardPage() {
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.9fr)_minmax(320px,0.9fr)]">
         <div className="space-y-6">
-          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+          {can('map.view') && <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div><h2 className="text-sm font-semibold text-slate-900">{view.mapTitle}</h2><p className="mt-0.5 text-xs text-slate-400">{view.mapHint}</p></div>
               <Link to="/map" className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">Open full map <ArrowRight size={14} className="text-slate-500" /></Link>
@@ -225,7 +197,7 @@ export function DashboardPage() {
               onSelectReport={can('community.view') ? (id) => navigate(`/community?report=${id}`) : undefined}
               className="h-[400px]"
             />
-          </section>
+          </section>}
           {role.id === 'coordinator' && <SiteSnapshot sites={scope.sites} title="My sites" registerLink={null} />}
           <TaskList tasks={scope.tasks} title={view.taskTitle} subtitle={view.taskSubtitle} />
         </div>
@@ -234,7 +206,7 @@ export function DashboardPage() {
           <PriorityList view={view} items={priorities} />
           <UpcomingSchedule meetings={scope.meetings} tasks={scope.tasks} canSchedule={can('schedule.manage')} />
           {role.id === 'coordinator' && <MyExpenses expenses={scope.expenses} />}
-          {can('budget.view') && <BudgetCard budget={budgetSummary} title={role.id === 'operator' ? 'Budget position' : 'Budget overview'} subtitle={role.id === 'operator' ? 'Read-only, approved costs' : 'Current programme budget'} />}
+          {can('budget.view') && <BudgetCard budget={budgetSummary} title="Budget overview" subtitle="Current programme budget" />}
         </aside>
       </div>
       <AccessPanel open={accessOpen} role={role} onClose={() => setAccessOpen(false)} />

@@ -4,7 +4,7 @@ The story: a resident reports a problem at a real Dhaka water body, a manager ch
 
 ## Before the demo
 - Use a laptop browser. Start signed out. You will sign in as the User first and as the Project Manager later (sign out between them).
-- Click **Reset demo** in Settings first, so the report numbers start at RPT-003.
+- Open the account menu and choose **Reset demo data** first, so the report numbers start at RPT-003.
 - Have one real photo ready on the device (a picture of a lake bank, waste, or any outdoor scene) so the upload step shows real evidence.
 - Optional: add EmailJS and Google OAuth variables if you want the notification steps to send for real.
 - Roles are chosen at sign-in and are not verified. Say so if asked.
@@ -52,21 +52,20 @@ Say: “The report becomes accountable work, and only a manager can close it.”
 
 ## 7. Bangla assistant and report — 60 seconds
 - Select the same lake and ask “কোন রিপোর্ট যাচাই বাকি?” and “কোন কাজ বাকি?”. Show the source chips.
-- Open **Reports**, generate the preview, and show the satellite imagery, community reports table, tasks, cost variance, limitations and sources. Print or save as PDF.
+- Open **Reports**, generate the preview, and show the satellite imagery, community reports table, tasks, cost variance, limitations and sources. Click **Download PDF** to save it, then **Send**: pick a person from the list and click their **Send** button to email them the summary table with the PDF attached.
 
 ## 8. Close — 20 seconds
-- Open **Audit trail** and filter to Community to show who submitted, reviewed and verified each report.
+- Open **Community reports** and a report's history to show who submitted, reviewed and verified it.
 - Finish with the honest boundary: real imagery, real outlines, real uploaded evidence; sample tasks, costs and classifications; water-area change not yet measured (next step: NDWI from Sentinel-2).
 
 ## Roles in 60 seconds (optional)
 - Sign in as Field Coordinator: six pages only, no budget, and only your own tasks. Open the account menu, then **My role and access**.
 - Open `/budget` by hand to show the "not part of your role" page instead of data.
-- Sign in as Office Operator: everything is visible but read-only. Show that a task has no Start, Assign or Approve controls.
-- Sign in as Project Manager to show the same task with every control.
+- Sign in as Project Manager to show a task with the Assign and Approve controls. There is no Start or Submit button: the assignee does the work, so nobody approves their own submission.
 
 ## Edge cases to show if asked
 - Gol Talab (0.6 ha) shows **Insufficient data**: it is under the one hectare minimum for 10 m imagery, so field photos are the right evidence.
 - A pin outside every outline is saved as a location-based report with no water body attached.
-- A rejected report disappears from the public map but stays in the review queue and audit trail.
+- A rejected report disappears from the public map but stays in the review queue.
 - A comparison with dates that are months apart in the seasonal cycle, or with no scene in the window, shows a warning or offers the nearest scene instead of a number.
 - Missing keys, rejected OAuth, or provider quota errors produce Failed log entries and never crash the app.

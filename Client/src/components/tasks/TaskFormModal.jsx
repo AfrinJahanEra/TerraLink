@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, ClipboardPlus, FileText, Mail, MessageCircle, UserRound, X } from 'lucide-react'
+import { Bell, CalendarDays, ClipboardPlus, FileText, Mail, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { REPORT_CATEGORIES } from '../../constants/reports'
 import { TASK_PRIORITIES } from '../../constants/actions'
@@ -13,7 +13,7 @@ export function TaskFormModal({ open, sites, members, initialSiteId, report = nu
   const [dueDate, setDueDate] = useState(addDays(todayInDhaka(), 7))
   const [estimatedCost, setEstimatedCost] = useState('')
   const [priority, setPriority] = useState(report ? 'High' : 'Medium')
-  const [notifications, setNotifications] = useState({ email: true, calendar: true, whatsapp: true })
+  const [notifications, setNotifications] = useState({ email: true, calendar: true })
 
   useEffect(() => {
     if (!open) return undefined
@@ -57,7 +57,7 @@ export function TaskFormModal({ open, sites, members, initialSiteId, report = nu
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block"><span className="text-xs font-semibold text-slate-700">Site</span><select value={siteId} disabled={Boolean(report?.siteId)} onChange={(event) => setSiteId(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{sites.map((site) => <option key={site.id} value={site.id}>{site.name} · {site.location}</option>)}</select></label>
-            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select></label>
+            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select><span className={`mt-1 block text-[10px] ${members.length ? 'text-slate-400' : 'font-medium text-amber-700'}`}>{members.length ? 'Work can only be given to a field coordinator.' : 'Add a field coordinator on the Team page first.'}</span></label>
             <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Deadline</span><input type="date" min={todayInDhaka()} value={dueDate} onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
             <label className="block"><span className="text-xs font-semibold text-slate-700">Estimated cost (BDT)</span><input type="number" min="0" step="100" value={estimatedCost} onChange={(event) => setEstimatedCost(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           </div>
@@ -66,15 +66,15 @@ export function TaskFormModal({ open, sites, members, initialSiteId, report = nu
 
           <fieldset className="rounded-lg border border-slate-200 p-3">
             <legend className="px-1 text-xs font-semibold text-slate-700">Notification preferences</legend>
-            <div className="mt-1 grid gap-2 sm:grid-cols-3">
-              {[['email', 'Email', Mail], ['calendar', 'Calendar', CalendarDays], ['whatsapp', 'WhatsApp', MessageCircle]].map(([id, label, Icon]) => (
+            <div className="mt-1 grid gap-2 sm:grid-cols-2">
+              {[['email', 'Email the assignee', Mail], ['calendar', 'Add to Google Calendar', CalendarDays]].map(([id, label, Icon]) => (
                 <label key={id} className="flex cursor-pointer items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={notifications[id]} onChange={() => toggleNotification(id)} className="accent-slate-700" /><Icon size={14} className="text-slate-500" />{label}</label>
               ))}
             </div>
-            <p className="mt-3 flex items-start gap-1.5 text-[10px] leading-4 text-slate-400"><Bell size={12} className="mt-0.5 shrink-0 text-slate-500" />Enabled channels run automatically after the task is created.</p>
+            <p className="mt-3 flex items-start gap-1.5 text-[10px] leading-4 text-slate-400"><Bell size={12} className="mt-0.5 shrink-0 text-slate-500" />The task always appears on the TerraLink schedule. The channels you tick run when the task is created.</p>
           </fieldset>
 
-          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end"><Button type="button" variant="secondary" onClick={onClose}>Cancel</Button><Button type="submit">Create task <ClipboardPlus size={15} /></Button></div>
+          <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end"><Button type="button" variant="secondary" onClick={onClose}>Cancel</Button><Button type="submit" disabled={!members.length}>Create task <ClipboardPlus size={15} /></Button></div>
         </form>
       </section>
     </div>

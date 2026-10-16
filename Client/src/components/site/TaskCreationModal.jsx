@@ -40,7 +40,7 @@ export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
           <label className="block"><span className="text-xs font-semibold text-slate-700">Task title</span><input value={title} onChange={(event) => setTitle(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}</select></label>
+            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}</select><span className={`mt-1 block text-[10px] ${members.length ? 'text-slate-400' : 'font-medium text-amber-700'}`}>{members.length ? 'Work can only be given to a field coordinator.' : 'Add a field coordinator on the Team page first.'}</span></label>
             <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Due date</span><input type="date" value={dueDate} min={todayInDhaka()} onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           </div>
 
@@ -49,7 +49,7 @@ export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
 
           <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
             <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Create task <ClipboardPlus size={15} /></Button>
+            <Button type="submit" disabled={!members.length}>Create task <ClipboardPlus size={15} /></Button>
           </div>
         </form>
       </section>

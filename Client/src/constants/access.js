@@ -6,46 +6,43 @@
  */
 const MANAGER = 'manager'
 const COORDINATOR = 'coordinator'
-const OPERATOR = 'operator'
 
 export const PERMISSIONS = {
   // Pages
-  'dashboard.view': [MANAGER, COORDINATOR, OPERATOR],
-  'map.view': [MANAGER, COORDINATOR, OPERATOR], // coordinator sees assigned sites only
-  'sites.register': [MANAGER, OPERATOR],
-  'sites.review': [MANAGER, OPERATOR],
+  'dashboard.view': [MANAGER, COORDINATOR],
+  'map.view': [MANAGER, COORDINATOR], // coordinator sees assigned sites only
+  'sites.register': [MANAGER],
+  'sites.review': [MANAGER],
   'sites.assigned': [COORDINATOR], // read-only record of a site they have a task at
-  'measurement.run': [MANAGER, OPERATOR],
-  'community.view': [MANAGER, OPERATOR],
-  'reviews.view': [MANAGER, OPERATOR],
-  'tasks.view': [MANAGER, COORDINATOR, OPERATOR], // coordinator sees own tasks only
-  'schedule.view': [MANAGER, COORDINATOR, OPERATOR], // coordinator sees meetings they attend
-  'budget.view': [MANAGER, OPERATOR],
-  'expenses.view': [MANAGER, COORDINATOR, OPERATOR], // coordinator sees expenses on own tasks
-  'team.view': [MANAGER, OPERATOR],
-  'reports.view': [MANAGER, OPERATOR],
-  'assistant.use': [MANAGER, COORDINATOR, OPERATOR],
-  'comms.view': [MANAGER, OPERATOR],
-  'audit.view': [MANAGER, OPERATOR],
-  'settings.manage': [MANAGER],
+  'measurement.run': [MANAGER],
+  'community.view': [MANAGER],
+  'reviews.view': [MANAGER],
+  'tasks.view': [MANAGER, COORDINATOR], // coordinator sees own tasks only
+  'schedule.view': [MANAGER, COORDINATOR], // coordinator sees meetings they attend
+  'budget.view': [MANAGER],
+  'expenses.view': [MANAGER, COORDINATOR], // coordinator sees expenses on own tasks
+  'team.view': [MANAGER],
+  'reports.view': [MANAGER],
+  'assistant.use': [MANAGER, COORDINATOR],
 
   // Actions
   'tasks.create': [MANAGER],
   'tasks.assign': [MANAGER], // assignee, deadline, estimate, notification choices
-  'tasks.progress': [MANAGER, COORDINATOR], // start, block, submit completion; coordinator on own tasks only
+  'tasks.progress': [COORDINATOR], // start, block, submit completion; own tasks only. Never the manager, who reviews it
   'tasks.review': [MANAGER], // approve completion, return for more work
   'tasks.cancel': [MANAGER],
-  'tasks.comment': [MANAGER, COORDINATOR, OPERATOR], // coordinator on own tasks only
-  'tasks.remind': [MANAGER, OPERATOR],
-  'expenses.add': [MANAGER, COORDINATOR, OPERATOR], // coordinator on own tasks only
+  'tasks.comment': [MANAGER, COORDINATOR], // coordinator on own tasks only
+  'tasks.remind': [MANAGER],
+  'expenses.add': [MANAGER, COORDINATOR], // coordinator on own tasks only
   'expenses.approve': [MANAGER],
   'budget.edit': [MANAGER],
   'sites.decide': [MANAGER],
-  'measurement.save': [MANAGER, OPERATOR],
+  'measurement.save': [MANAGER],
   'community.review': [MANAGER],
-  'schedule.manage': [MANAGER, OPERATOR],
-  'team.manage': [MANAGER, OPERATOR],
-  'reports.share': [MANAGER, OPERATOR],
+  'schedule.manage': [MANAGER],
+  'team.manage': [MANAGER],
+  'reports.share': [MANAGER],
+  'workspace.reset': [MANAGER], // restore the sample data, from the account menu
 }
 
 export function can(roleId, permission) {
@@ -62,9 +59,13 @@ export const ROLE_ACCESS = {
       'Create tasks and assign or reassign them',
       'Approve finished work and close tasks, or send it back',
       'Approve or reject expenses and edit budget allocations',
-      'Manage the team, settings, integrations, and see communications and the audit trail',
+      'Manage the team, send reports by email, and reset the sample data',
     ],
-    cannot: ['Submit community reports. Those come from users.'],
+    cannot: [
+      'Do the field work. Starting, blocking and submitting a task belongs to its assignee, so the person who approves is never the person who did the work',
+      'Assign a task to anyone who is not a field coordinator',
+      'Submit community reports. Those come from users.',
+    ],
   },
   coordinator: {
     headline: 'Does the field work on assigned tasks',
@@ -77,22 +78,7 @@ export const ROLE_ACCESS = {
     cannot: [
       'Create, assign or reassign tasks, or see anyone else’s tasks',
       'Close a task, approve expenses or work, verify reports or record site decisions',
-      'See budgets, the team directory, programme reports, communications, the audit trail or settings',
-    ],
-  },
-  operator: {
-    headline: 'Keeps the records and the paperwork',
-    can: [
-      'See every site, task, community report and cost, read-only',
-      'Run satellite comparisons and save measurements to the site record',
-      'Add notes and record expenses on any task; send reminders',
-      'Schedule meetings and field visits and keep team records',
-      'Generate and share programme reports; see communications and the audit trail',
-    ],
-    cannot: [
-      'Create, assign or reassign tasks, change their status or close them',
-      'Verify reports, record site decisions, approve expenses or edit budgets',
-      'Open settings',
+      'See budgets, the team directory or programme reports',
     ],
   },
 }

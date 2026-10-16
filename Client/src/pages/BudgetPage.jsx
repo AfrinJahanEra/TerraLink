@@ -40,7 +40,7 @@ export function BudgetPage() {
   const canPlan = can('budget.edit')
   const canSchedule = can('schedule.manage')
 
-  // Only the project manager and office operator reach this page, and both see the whole programme.
+  // Only the project manager reaches this page, and sees the whole programme.
   const visibleTasks = tasks
   const visibleSites = sites
   const visibleExpenses = expenses

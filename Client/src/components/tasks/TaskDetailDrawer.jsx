@@ -8,7 +8,6 @@ import {
   FileText,
   Mail,
   MapPin,
-  MessageCircle,
   MessageSquareText,
   Radio,
   ReceiptText,
@@ -19,6 +18,7 @@ import {
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { can } from '../../constants/access'
+import { canAccessPath } from '../../constants/navigation'
 import { TASK_STATUS, isTaskClosed } from '../../constants/status'
 import { buildScheduleLink } from '../../utils/schedule'
 import { isTaskOverdue } from '../../utils/tasks'
@@ -53,7 +53,7 @@ function ActionLink({ icon: Icon, to, children }) {
 export function TaskDetailDrawer({
   task, report, expenses, role, members, logs = [],
   onClose, onUpdate, onAddComment, onSetStatus, onSubmitCompletion, onReviewCompletion, onAddExpense, onReviewExpense,
-  onAddToCalendar, onDownloadIcs, onEmailReminder, onWhatsAppReminder,
+  onAddToCalendar, onDownloadIcs, onEmailReminder,
 }) {
   const [assignee, setAssignee] = useState(task.assignee)
   const [dueDate, setDueDate] = useState(task.dueDate)
@@ -75,6 +75,11 @@ export function TaskDetailDrawer({
   const canUseCalendar = canRemind || task.assignee === role.user.name
   const overdue = isTaskOverdue(task)
 
+  // Reassignment offers field coordinators only. A task still held by someone else keeps that name visible so it can be moved.
+  const assigneeOptions = members.some((member) => member.name === task.assignee)
+    ? members
+    : [{ id: 'current-assignee', name: task.assignee, initials: task.initials, legacy: true }, ...members]
+
   async function sendEmailReminder() {
     setSendingEmail(true)
     try {
@@ -94,7 +99,7 @@ export function TaskDetailDrawer({
 
   function submitChanges(event) {
     event.preventDefault()
-    const member = members.find((item) => item.name === assignee)
+    const member = assigneeOptions.find((item) => item.name === assignee)
     onUpdate({ assignee, initials: member.initials, dueDate, estimatedCost: Number(estimatedCost), notifications })
     setSaved(true)
   }
@@ -128,7 +133,9 @@ export function TaskDetailDrawer({
         <div className="flex-1 overflow-y-auto p-5">
           <p className="text-xs leading-5 text-slate-600">{task.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-            <Link to={`/sites/${task.siteId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><MapPin size={14} className="text-slate-500" />{task.site} site record</Link>
+            {canAccessPath(role.id, `/sites/${task.siteId}`)
+              ? <Link to={`/sites/${task.siteId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><MapPin size={14} className="text-slate-500" />{task.site} site record</Link>
+              : <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500"><MapPin size={14} className="text-slate-400" />{task.site}</span>}
             {task.reportId && (permitted('community.view')
               ? <Link to={`/community?report=${task.reportId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><FileText size={14} className="text-slate-500" />Source report {task.reportId}</Link>
               : <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500"><FileText size={14} />Source report {task.reportId}</span>)}
@@ -143,7 +150,7 @@ export function TaskDetailDrawer({
             <form onSubmit={submitChanges} className="mt-6 space-y-4 border-t border-slate-100 pt-5">
               <h3 className="text-xs font-semibold text-slate-800">Assignment and plan</h3>
               <div className="grid gap-4 sm:grid-cols-3">
-                <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => { setAssignee(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400">{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select></label>
+                <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => { setAssignee(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400">{assigneeOptions.map((member) => <option key={member.id} value={member.name}>{member.name}{member.legacy ? ' (not a field coordinator)' : ''}</option>)}</select></label>
                 <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Deadline</span><input type="date" value={dueDate} onChange={(event) => { setDueDate(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none" /></label>
                 <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CircleDollarSign size={14} className="text-slate-500" />Estimated cost</span><input type="number" min="0" value={estimatedCost} onChange={(event) => { setEstimatedCost(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none" /></label>
               </div>
@@ -151,7 +158,7 @@ export function TaskDetailDrawer({
               <fieldset className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
                 <legend className="px-1 text-[10px] font-semibold text-slate-600">Notification preferences</legend>
                 <div className="flex flex-wrap items-center gap-4 text-[10px] text-slate-500">
-                  {[['email', 'Email', Mail], ['calendar', 'Calendar', CalendarDays], ['whatsapp', 'WhatsApp', MessageCircle]].map(([id, label, Icon]) => (
+                  {[['email', 'Email', Mail], ['calendar', 'Google Calendar', CalendarDays]].map(([id, label, Icon]) => (
                     <label key={id} className="flex items-center gap-1.5"><input type="checkbox" checked={notifications[id]} onChange={() => { setNotifications((current) => ({ ...current, [id]: !current[id] })); setSaved(false) }} className="accent-slate-700" /><Icon size={12} className="text-slate-500" />{label}</label>
                   ))}
                 </div>
@@ -170,7 +177,6 @@ export function TaskDetailDrawer({
                 {canUseCalendar && onAddToCalendar && <ActionButton icon={CalendarDays} onClick={onAddToCalendar}>Add deadline to Google Calendar</ActionButton>}
                 {canUseCalendar && onDownloadIcs && <ActionButton icon={Download} onClick={onDownloadIcs}>Download deadline .ics</ActionButton>}
                 {canRemind && onEmailReminder && <ActionButton icon={Mail} onClick={sendEmailReminder} disabled={sendingEmail}>{sendingEmail ? 'Sending reminder…' : 'Email reminder to assignee'}</ActionButton>}
-                {canRemind && onWhatsAppReminder && <ActionButton icon={MessageCircle} onClick={onWhatsAppReminder}>WhatsApp reminder</ActionButton>}
                 {permitted('schedule.manage') && <ActionLink icon={CalendarPlus} to={buildScheduleLink({ new: 'field_visit', site: task.siteId, task: task.id, title: `${task.site} field visit · ${task.id}` })}>Schedule field visit</ActionLink>}
                 {permitted('expenses.view') && <ActionLink icon={ReceiptText} to="/expenses">Open expense ledger</ActionLink>}
               </div>
@@ -193,7 +199,7 @@ export function TaskDetailDrawer({
 
           <section className="mt-6 border-t border-slate-100 pt-5">
             <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-800"><Radio size={15} className="text-slate-500" />Communications</h3>
-            <CommunicationHistory logs={logs} emptyText="No emails, calendar events, or WhatsApp messages have been recorded for this task." />
+            <CommunicationHistory logs={logs} emptyText="No emails or calendar events have been recorded for this task." />
           </section>
         </div>
       </aside>

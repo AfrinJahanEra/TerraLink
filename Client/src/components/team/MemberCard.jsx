@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Mail, MessageCircle, Pencil, UserRoundCheck } from 'lucide-react'
+import { BriefcaseBusiness, Mail, Pencil, UserRoundCheck } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 
 const availability = {
@@ -26,7 +26,6 @@ export function MemberCard({ member, assignedCount, onEdit, canEdit }) {
 
       <dl className="mt-4 space-y-2 border-y border-slate-100 py-3 text-xs">
         <div className="flex items-center gap-2 text-slate-500"><Mail size={14} className="text-slate-500" /><a href={`mailto:${member.email}`} className="truncate hover:text-slate-800">{member.email}</a></div>
-        <div className="flex items-center gap-2 text-slate-500"><MessageCircle size={14} className="text-slate-500" /><a href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="hover:text-slate-800">{member.whatsapp}</a></div>
       </dl>
 
       <div className="mt-4">

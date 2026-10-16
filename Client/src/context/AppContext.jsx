@@ -5,7 +5,6 @@ import { OPEN_REPORT_STATUSES } from '../constants/reports'
 import { ROLES } from '../constants/roles'
 import { initialCommunityReports } from '../data/communityReports'
 import { dashboardSites, dashboardTasks } from '../data/dashboard'
-import { defaultIntegrationSettings } from '../data/integrations'
 import { initialExpenses, initialSiteBudgets, initialTeamMembers } from '../data/operations'
 import { initialMeetings, MEETING_TYPES } from '../data/schedule'
 import { clearPhotos } from '../services/photoStore'
@@ -15,25 +14,20 @@ import { useLocalStorage } from '../hooks/useLocalStorage'
 import {
   addEventToCalendar,
   automateBudgetOverrun,
-  automateOverdueTask,
   automateTaskAssignment,
   automateTaskCompletion,
   emailMeetingInvites as sendMeetingInvites,
   emailReportToRecipients,
   emailTaskReminder as sendTaskReminderEmail,
   recordCalendarDownload,
-  runIntegrationTest,
-  whatsappMeetingReminder as openMeetingWhatsApp,
-  whatsappTaskReminder as openTaskWhatsApp,
 } from '../services/automation'
 import { downloadEventIcs, meetingToCalendarEvent, taskToCalendarEvent } from '../services/calendar'
 import { buildSiteBudgetRows, calculateBudgetSummary } from '../utils/budget'
 import { formatLongDate, formatTimeRange } from '../utils/schedule'
-import { createActivity, dueLabel, isTaskOverdue } from '../utils/tasks'
+import { createActivity, dueLabel, isFieldCoordinator } from '../utils/tasks'
 import { AppContext } from './app-context'
 
 const WORKSPACE_KEY = 'terralink.workspace.v3'
-const initialAutomationKeys = dashboardTasks.filter(isTaskOverdue).map((task) => `overdue:${task.id}`)
 const initialWorkspace = {
   siteUpdates: {},
   decisions: {},
@@ -44,9 +38,7 @@ const initialWorkspace = {
   meetings: initialMeetings,
   communityReports: initialCommunityReports,
   comparisons: [],
-  integrationSettings: defaultIntegrationSettings,
   notificationLogs: [],
-  automationKeys: initialAutomationKeys,
 }
 
 function normalizeTask(task) {
@@ -61,7 +53,10 @@ function normalizeTask(task) {
     assignedBy: 'Nusrat Jahan',
     ...original,
     ...task,
-    notifications: { email: false, calendar: false, whatsapp: false, ...original.notifications, ...task.notifications },
+    notifications: {
+      email: Boolean(task.notifications?.email ?? original.notifications?.email),
+      calendar: Boolean(task.notifications?.calendar ?? original.notifications?.calendar),
+    },
     comments: task.comments ?? original.comments ?? [],
     activityHistory: task.activityHistory ?? original.activityHistory ?? [],
     submissions: task.submissions ?? original.submissions ?? [],
@@ -85,15 +80,7 @@ function readWorkspace() {
       meetings: Array.isArray(parsed.meetings) ? parsed.meetings : initialMeetings,
       communityReports: Array.isArray(parsed.communityReports) ? parsed.communityReports : initialCommunityReports,
       comparisons: Array.isArray(parsed.comparisons) ? parsed.comparisons : [],
-      integrationSettings: {
-        ...defaultIntegrationSettings,
-        ...parsed.integrationSettings,
-        rules: { ...defaultIntegrationSettings.rules, ...parsed.integrationSettings?.rules },
-      },
       notificationLogs: Array.isArray(parsed.notificationLogs) ? parsed.notificationLogs : [],
-      automationKeys: Array.isArray(parsed.automationKeys)
-        ? parsed.automationKeys
-        : savedTasks.filter(isTaskOverdue).map((task) => `overdue:${task.id}`),
     }
   } catch {
     return initialWorkspace
@@ -193,32 +180,8 @@ function workspaceReducer(state, action) {
           history: [...report.history, action.payload.entry],
         } : report),
       }
-    case 'SET_INTEGRATION_RULE':
-      return {
-        ...state,
-        integrationSettings: {
-          ...state.integrationSettings,
-          rules: { ...state.integrationSettings.rules, [action.payload.ruleId]: action.payload.enabled },
-        },
-      }
-    case 'SET_NOTIFICATION_LANGUAGE':
-      return {
-        ...state,
-        integrationSettings: { ...state.integrationSettings, language: action.payload },
-      }
     case 'ADD_NOTIFICATION_LOG':
       return { ...state, notificationLogs: [action.payload, ...state.notificationLogs].slice(0, 100) }
-    case 'UPDATE_NOTIFICATION_STATUS':
-      return {
-        ...state,
-        notificationLogs: state.notificationLogs.map((log) => log.id === action.payload.logId ? { ...log, status: action.payload.status } : log),
-      }
-    case 'CLEAR_NOTIFICATION_LOGS':
-      return { ...state, notificationLogs: [] }
-    case 'MARK_AUTOMATION':
-      return state.automationKeys.includes(action.payload)
-        ? state
-        : { ...state, automationKeys: [...state.automationKeys, action.payload] }
     case 'RESET_DEMO':
       return {
         ...initialWorkspace,
@@ -241,7 +204,7 @@ export function AppProvider({ children }) {
   const role = useMemo(() => {
     const baseRole = roleId ? ROLES[roleId] : null
     if (!baseRole) return null
-    const profileIds = { manager: 'member-nusrat', coordinator: 'member-rahim', operator: 'member-sadia' }
+    const profileIds = { manager: 'member-nusrat', coordinator: 'member-rahim' }
     const profile = workspace.teamMembers.find((member) => member.id === profileIds[roleId])
     return profile ? { ...baseRole, user: { name: profile.name, email: profile.email } } : baseRole
   }, [roleId, workspace.teamMembers])
@@ -281,7 +244,7 @@ export function AppProvider({ children }) {
   )
   const memberId = useMemo(() => workspace.teamMembers.find((member) => member.name === role?.user.name)?.id, [role, workspace.teamMembers])
   // Everything a page shows should come from `scope`, so a role never receives data it is not meant to see.
-  // Managers and operators see the whole programme; a coordinator sees only their own tasks and what hangs off them.
+  // The manager sees the whole programme; a coordinator sees only their own tasks and what hangs off them.
   const scope = useMemo(() => {
     if (!role?.staff) return null
     if (role.id !== 'coordinator') {
@@ -330,8 +293,8 @@ export function AppProvider({ children }) {
   const triggerTaskAssignment = useCallback((task) => {
     const assignee = workspace.teamMembers.find((member) => member.name === task.assignee)
     const site = sites.find((item) => item.id === task.siteId)
-    void automateTaskAssignment({ task, assignee, site, settings: workspace.integrationSettings, record: recordNotification })
-  }, [recordNotification, sites, workspace.integrationSettings, workspace.teamMembers])
+    return automateTaskAssignment({ task, assignee, site, record: recordNotification })
+  }, [recordNotification, sites, workspace.teamMembers])
 
   const recordDecision = useCallback((decision) => {
     guard('sites.decide', 'Only the project manager can record a review decision.')
@@ -361,19 +324,26 @@ export function AppProvider({ children }) {
   }, [guard, role])
 
   const saveComparison = useCallback((comparison) => {
-    guard('measurement.save', 'Only the project manager or office operator can record a measurement.')
+    guard('measurement.save', 'Only the project manager can record a measurement.')
     const highest = workspace.comparisons.reduce((max, item) => Math.max(max, Number(item.id.replace('CMP-', '')) || 0), 0)
     const saved = { ...comparison, id: `CMP-${String(highest + 1).padStart(3, '0')}`, savedAt: new Date().toISOString(), savedBy: role.user.name }
     dispatch({ type: 'SAVE_COMPARISON', payload: saved })
     return saved
   }, [guard, role, workspace.comparisons])
 
+  /** Work is done in the field, so a task can only be given to a field coordinator. */
+  const requireFieldCoordinator = useCallback((name) => {
+    if (!isFieldCoordinator(workspace.teamMembers.find((member) => member.name === name))) throw new Error('Tasks can only be assigned to a field coordinator.')
+  }, [workspace.teamMembers])
+
   const createTask = useCallback((task) => {
     guard('tasks.create', 'Only the project manager can create and assign tasks.')
+    requireFieldCoordinator(task.assignee)
     const normalizedTask = normalizeTask(task)
     dispatch({ type: 'ADD_TASK', payload: normalizedTask })
-    triggerTaskAssignment(normalizedTask)
-  }, [guard, triggerTaskAssignment])
+    // Resolves with what the email and calendar follow-ups did, so the page can tell the person.
+    return triggerTaskAssignment(normalizedTask)
+  }, [guard, requireFieldCoordinator, triggerTaskAssignment])
 
   const updateTask = useCallback((taskId, changes, activity) => {
     const currentTask = tasks.find((task) => task.id === taskId)
@@ -382,15 +352,17 @@ export function AppProvider({ children }) {
     const nextTask = normalizeTask({ ...currentTask, ...changes })
     if (changes.assignee && changes.assignee !== currentTask.assignee) triggerTaskAssignment(nextTask)
     if (currentTask.status !== 'awaiting_verification' && nextTask.status === 'awaiting_verification' && manager) {
-      void automateTaskCompletion({ task: nextTask, manager, settings: workspace.integrationSettings, record: recordNotification })
+      void automateTaskCompletion({ task: nextTask, manager, record: recordNotification })
     }
-  }, [manager, recordNotification, tasks, triggerTaskAssignment, workspace.integrationSettings])
+  }, [manager, recordNotification, tasks, triggerTaskAssignment])
 
   /** Assignment, deadline, estimate and notification choices. Only the project manager can change them. */
   const updateTaskPlan = useCallback((taskId, changes, activity) => {
     guard('tasks.assign', 'Only the project manager can assign tasks or change their plan.')
+    const currentTask = tasks.find((task) => task.id === taskId)
+    if (changes.assignee && changes.assignee !== currentTask?.assignee) requireFieldCoordinator(changes.assignee)
     updateTask(taskId, changes, activity)
-  }, [guard, updateTask])
+  }, [guard, requireFieldCoordinator, tasks, updateTask])
 
   const addTaskComment = useCallback((taskId, comment, activity) => {
     guard('tasks.comment', 'You cannot comment on tasks.')
@@ -400,12 +372,12 @@ export function AppProvider({ children }) {
   }, [guard, role, tasks])
 
   const addTeamMember = useCallback((member) => {
-    guard('team.manage', 'Only the project manager or office operator can change team records.')
+    guard('team.manage', 'Only the project manager can change team records.')
     dispatch({ type: 'ADD_TEAM_MEMBER', payload: member })
   }, [guard])
 
   const updateTeamMember = useCallback((memberId, changes) => {
-    guard('team.manage', 'Only the project manager or office operator can change team records.')
+    guard('team.manage', 'Only the project manager can change team records.')
     dispatch({ type: 'UPDATE_TEAM_MEMBER', payload: { memberId, changes } })
   }, [guard])
 
@@ -416,9 +388,9 @@ export function AppProvider({ children }) {
     dispatch({ type: 'SET_SITE_BUDGET', payload: { siteId, amount } })
     if (row && manager && row.actual <= previousPlanned && row.actual > Number(amount)) {
       const site = sites.find((item) => item.id === siteId)
-      void automateBudgetOverrun({ site, planned: Number(amount), actual: row.actual, manager, settings: workspace.integrationSettings, record: recordNotification })
+      void automateBudgetOverrun({ site, planned: Number(amount), actual: row.actual, manager, record: recordNotification })
     }
-  }, [guard, manager, recordNotification, siteBudgetRows, sites, workspace.integrationSettings, workspace.siteBudgets])
+  }, [guard, manager, recordNotification, siteBudgetRows, sites, workspace.siteBudgets])
 
   /** Warns the manager the first time approved spending passes a site's planned allocation. */
   const warnIfOverBudget = useCallback((siteId, addedApproved) => {
@@ -427,15 +399,15 @@ export function AppProvider({ children }) {
     const nextActual = row.actual + addedApproved
     if (row.actual <= row.planned && nextActual > row.planned) {
       const site = sites.find((item) => item.id === siteId)
-      void automateBudgetOverrun({ site, planned: row.planned, actual: nextActual, manager, settings: workspace.integrationSettings, record: recordNotification })
+      void automateBudgetOverrun({ site, planned: row.planned, actual: nextActual, manager, record: recordNotification })
     }
-  }, [manager, recordNotification, siteBudgetRows, sites, workspace.integrationSettings])
+  }, [manager, recordNotification, siteBudgetRows, sites])
 
   const addExpense = useCallback((expense, activity) => {
     const task = tasks.find((item) => item.id === expense.taskId)
     const isManager = role?.id === 'manager'
     const ownTask = role?.id === 'coordinator' && task?.assignee === role.user.name
-    if (!isManager && role?.id !== 'operator' && !ownTask) throw new Error('You cannot record expenses for this task.')
+    if (!isManager && !ownTask) throw new Error('You cannot record expenses for this task.')
     if (task && isTaskClosed(task)) throw new Error('This task is closed, so no more expenses can be added.')
     // The project manager's own entries are approved on entry; everyone else's wait for review.
     const approved = isManager
@@ -471,21 +443,23 @@ export function AppProvider({ children }) {
   const setTaskStatus = useCallback((taskId, status, reason = '') => {
     const task = tasks.find((item) => item.id === taskId)
     if (!task) return
-    const isManager = role?.id === 'manager'
+    // The assignee does the work (start, block, resume); the manager only reopens or cancels. Nobody approves their own work.
     const ownTask = role?.id === 'coordinator' && task.assignee === role.user.name
-    const fieldMoves = ['in_progress', 'blocked']
-    if (!(isManager || (ownTask && fieldMoves.includes(status)))) throw new Error('You cannot change the status of this task.')
+    const fieldMove = ['in_progress', 'blocked'].includes(status)
+    if (fieldMove ? !ownTask : !(roleCan(role?.id, 'tasks.cancel') && ['open', 'cancelled'].includes(status))) throw new Error('You cannot change the status of this task.')
+    if (fieldMove && !['open', 'in_progress', 'blocked'].includes(task.status)) throw new Error('This task is no longer being worked on.')
     if ((status === 'blocked' || status === 'cancelled') && reason.trim().length < 5) throw new Error('Give a short reason.')
     const labels = { in_progress: task.status === 'blocked' ? 'Work resumed' : 'Work started', blocked: 'Marked blocked', cancelled: 'Task cancelled', open: 'Task reopened' }
     updateTask(taskId, { status, blockedReason: status === 'blocked' ? reason.trim() : '', cancelReason: status === 'cancelled' ? reason.trim() : '' }, createActivity(`${labels[status] ?? 'Status changed'}${reason ? `: ${reason.trim()}` : ''}`, role.user.name))
   }, [role, tasks, updateTask])
 
-  /** The assigned person (or the manager) hands in photos and a summary. It does not close the task. */
+  /** Only the assigned field coordinator hands in photos and a summary. It does not close the task. */
   const submitCompletion = useCallback((taskId, submission) => {
     const task = tasks.find((item) => item.id === taskId)
     if (!task) return
     const ownTask = role?.id === 'coordinator' && task.assignee === role.user.name
-    if (role?.id !== 'manager' && !ownTask) throw new Error('Only the assigned person or the project manager can submit completion evidence.')
+    if (!ownTask) throw new Error('Only the person assigned to this task can submit its completion evidence.')
+    if (task.status !== 'in_progress') throw new Error('Start the task before submitting completion evidence.')
     const entry = { id: `sub-${taskId}-${Date.now()}`, ...submission, submittedBy: role.user.name, submittedAt: new Date().toISOString() }
     updateTask(taskId, { status: 'awaiting_verification', blockedReason: '', submissions: [...(task.submissions ?? []), entry] }, createActivity(`Completion evidence submitted (${submission.photos.length} photo${submission.photos.length === 1 ? '' : 's'})`, role.user.name))
   }, [role, tasks, updateTask])
@@ -495,6 +469,8 @@ export function AppProvider({ children }) {
     if (role?.id !== 'manager') throw new Error('Only the project manager can review completion.')
     const task = tasks.find((item) => item.id === taskId)
     if (!task) return
+    if (task.status !== 'awaiting_verification') throw new Error('This task has no completion evidence waiting for review.')
+    if (task.submissions?.at(-1)?.submittedBy === role.user.name) throw new Error('You cannot review work you submitted yourself.')
     if (decision === 'approved') {
       const resolution = { outcome, note: note.trim(), by: role.user.name, at: new Date().toISOString() }
       updateTask(taskId, { status: 'completed', resolution, completedAt: resolution.at }, createActivity(`Completion approved, outcome: ${outcome.replaceAll('_', ' ')}${note.trim() ? `. ${note.trim()}` : ''}`, role.user.name))
@@ -503,53 +479,13 @@ export function AppProvider({ children }) {
     }
   }, [role, tasks, updateTask])
 
-  const setIntegrationRule = useCallback((ruleId, enabled) => {
-    guard('settings.manage', 'Only the project manager can change settings.')
-    const integrationSettings = {
-      ...workspace.integrationSettings,
-      rules: { ...workspace.integrationSettings.rules, [ruleId]: enabled },
-    }
-    try {
-      window.localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ ...workspace, integrationSettings }))
-    } catch {
-      // The reducer still updates the current session when storage is unavailable.
-    }
-    dispatch({ type: 'SET_INTEGRATION_RULE', payload: { ruleId, enabled } })
-  }, [guard, workspace])
-
-  const setNotificationLanguage = useCallback((language) => {
-    guard('settings.manage', 'Only the project manager can change settings.')
-    const integrationSettings = { ...workspace.integrationSettings, language }
-    try {
-      window.localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ ...workspace, integrationSettings }))
-    } catch {
-      // The reducer still updates the current session when storage is unavailable.
-    }
-    dispatch({ type: 'SET_NOTIFICATION_LANGUAGE', payload: language })
-  }, [guard, workspace])
-
-  const updateNotificationStatus = useCallback((logId, status) => {
-    dispatch({ type: 'UPDATE_NOTIFICATION_STATUS', payload: { logId, status } })
-  }, [])
-
-  const clearNotificationLogs = useCallback(() => {
-    guard('settings.manage', 'Only the project manager can clear the communications log.')
-    dispatch({ type: 'CLEAR_NOTIFICATION_LOGS' })
-  }, [guard])
-
-  const sendIntegrationTest = useCallback((service) => {
-    guard('settings.manage', 'Only the project manager can send test messages.')
-    if (!manager) return Promise.reject(new Error('A project manager contact is required.'))
-    return runIntegrationTest({ service, manager, settings: workspace.integrationSettings, record: recordNotification })
-  }, [guard, manager, recordNotification, workspace.integrationSettings])
-
   const createMeeting = useCallback((meeting) => {
-    guard('schedule.manage', 'Only the project manager or office operator can schedule meetings.')
+    guard('schedule.manage', 'Only the project manager can schedule meetings.')
     dispatch({ type: 'ADD_MEETING', payload: meeting })
   }, [guard])
 
   const updateMeeting = useCallback((meetingId, changes) => {
-    guard('schedule.manage', 'Only the project manager or office operator can change meetings.')
+    guard('schedule.manage', 'Only the project manager can change meetings.')
     dispatch({ type: 'UPDATE_MEETING', payload: { meetingId, changes } })
   }, [guard])
 
@@ -602,18 +538,6 @@ export function AppProvider({ children }) {
     return sendMeetingInvites({ meeting, attendees: meetingAttendees(meeting), summary, record: recordNotification })
   }, [meetingAttendees, recordNotification, sites])
 
-  const whatsappMeetingReminder = useCallback((meeting, memberId) => {
-    const member = workspace.teamMembers.find((item) => item.id === memberId)
-    return openMeetingWhatsApp({
-      meeting,
-      member,
-      dateLabel: formatLongDate(meeting.date),
-      timeRange: formatTimeRange(meeting),
-      language: workspace.integrationSettings.language,
-      record: recordNotification,
-    })
-  }, [recordNotification, workspace.integrationSettings.language, workspace.teamMembers])
-
   /** Must be called directly from a click handler so the calendar tab is not blocked. */
   const addTaskToCalendar = useCallback((task) => addEventToCalendar({
     event: taskToCalendarEvent(task),
@@ -628,7 +552,7 @@ export function AppProvider({ children }) {
   }, [recordNotification])
 
   const emailTaskReminder = useCallback((task) => {
-    guard('tasks.remind', 'Only the project manager or office operator can send reminders.')
+    guard('tasks.remind', 'Only the project manager can send reminders.')
     return sendTaskReminderEmail({
       task,
       assignee: workspace.teamMembers.find((member) => member.name === task.assignee),
@@ -636,36 +560,14 @@ export function AppProvider({ children }) {
     })
   }, [guard, recordNotification, workspace.teamMembers])
 
-  const whatsappTaskReminder = useCallback((task) => {
-    guard('tasks.remind', 'Only the project manager or office operator can send reminders.')
-    return openTaskWhatsApp({
-      task,
-      assignee: workspace.teamMembers.find((member) => member.name === task.assignee),
-      language: workspace.integrationSettings.language,
-      record: recordNotification,
-    })
-  }, [guard, recordNotification, workspace.integrationSettings.language, workspace.teamMembers])
-
-  const shareReport = useCallback(({ recipientIds, title, summary, note }) => {
-    guard('reports.share', 'Only the project manager or office operator can share reports.')
-    const recipients = workspace.teamMembers.filter((member) => recipientIds.includes(member.id))
-    if (!recipients.length) return Promise.reject(new Error('Select at least one recipient.'))
-    return emailReportToRecipients({ recipients, reportTitle: title, summary, note, record: recordNotification })
-  }, [guard, recordNotification, workspace.teamMembers])
-
-  useEffect(() => {
-    if (!role || !workspace.integrationSettings.rules.overdueWhatsapp) return
-    workspace.tasks.forEach((task) => {
-      const key = `overdue:${task.id}`
-      if (!isTaskOverdue(task) || !task.notifications?.whatsapp || workspace.automationKeys.includes(key)) return
-      const assignee = workspace.teamMembers.find((member) => member.name === task.assignee)
-      dispatch({ type: 'MARK_AUTOMATION', payload: key })
-      automateOverdueTask({ task, assignee, settings: workspace.integrationSettings, record: recordNotification })
-    })
-  }, [recordNotification, role, workspace.automationKeys, workspace.integrationSettings, workspace.tasks, workspace.teamMembers])
+  const shareReport = useCallback(({ recipients, title, subject, summary, note, html, attachment }) => {
+    guard('reports.share', 'Only the project manager can send reports.')
+    if (!recipients.length) return Promise.reject(new Error('Choose someone to send the report to.'))
+    return emailReportToRecipients({ recipients, reportTitle: title, subject, summary, note, html, attachment, record: recordNotification })
+  }, [guard, recordNotification])
 
   const resetDemo = useCallback(() => {
-    guard('settings.manage', 'Only the project manager can reset the workspace.')
+    guard('workspace.reset', 'Only the project manager can reset the workspace.')
     dispatch({ type: 'RESET_DEMO' })
     void clearPhotos()
   }, [guard])
@@ -690,7 +592,6 @@ export function AppProvider({ children }) {
       reviewReport,
       comparisons: workspace.comparisons,
       saveComparison,
-      integrationSettings: workspace.integrationSettings,
       notificationLogs: workspace.notificationLogs,
       addNotificationLog: recordNotification,
       budgetSummary,
@@ -706,25 +607,18 @@ export function AppProvider({ children }) {
       setTaskStatus,
       submitCompletion,
       reviewCompletion,
-      setIntegrationRule,
-      setNotificationLanguage,
-      updateNotificationStatus,
-      clearNotificationLogs,
-      sendIntegrationTest,
       createMeeting,
       updateMeeting,
       addMeetingToCalendar,
       downloadMeetingIcs,
       emailMeetingInvites,
-      whatsappMeetingReminder,
       addTaskToCalendar,
       downloadTaskIcs,
       emailTaskReminder,
-      whatsappTaskReminder,
       shareReport,
       resetDemo,
     }),
-    [can, scope, updateTaskPlan, addExpense, reviewExpense, setTaskStatus, submitCompletion, reviewCompletion, addMeetingToCalendar, addTaskComment, addTaskToCalendar, addTeamMember, budgetSummary, clearNotificationLogs, createMeeting, createTask, downloadMeetingIcs, downloadTaskIcs, emailMeetingInvites, emailTaskReminder, recordDecision, recordNotification, resetDemo, role, sendIntegrationTest, submitReport, reviewReport, saveComparison, setIntegrationRule, setNotificationLanguage, setRoleId, setSiteBudget, shareReport, signOut, sites, updateMeeting, updateNotificationStatus, updateTeamMember, whatsappMeetingReminder, whatsappTaskReminder, communityReports, tasks, workspace.comparisons, workspace.decisions, workspace.expenses, workspace.integrationSettings, workspace.meetings, workspace.notificationLogs, workspace.siteBudgets, workspace.teamMembers],
+    [can, scope, updateTaskPlan, addExpense, reviewExpense, setTaskStatus, submitCompletion, reviewCompletion, addMeetingToCalendar, addTaskComment, addTaskToCalendar, addTeamMember, budgetSummary, createMeeting, createTask, downloadMeetingIcs, downloadTaskIcs, emailMeetingInvites, emailTaskReminder, recordDecision, recordNotification, resetDemo, role, submitReport, reviewReport, saveComparison, setRoleId, setSiteBudget, shareReport, signOut, sites, updateMeeting, updateTeamMember, communityReports, tasks, workspace.comparisons, workspace.decisions, workspace.expenses, workspace.meetings, workspace.notificationLogs, workspace.siteBudgets, workspace.teamMembers],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

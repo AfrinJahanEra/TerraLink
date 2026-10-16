@@ -15,21 +15,21 @@ export function describeEmailResult(logs, noun = 'email') {
   const sent = list.filter((log) => log.status === 'Sent').length
   if (list.length && sent === list.length) return `${sent} ${noun}${sent === 1 ? '' : 's'} sent.`
   if (!sent) return `${noun.charAt(0).toUpperCase()}${noun.slice(1)} not sent: ${list[0]?.detail || 'delivery failed.'}`
-  return `${sent} of ${list.length} ${noun}s sent; ${list.length - sent} failed. See Communications for details.`
+  return `${sent} of ${list.length} ${noun}s sent; ${list.length - sent} failed.`
+}
+
+/** What happened after a task was created: the schedule always has it; email and Google Calendar run if ticked. */
+export function describeTaskFollowUp(id, logs = []) {
+  const email = logs.find((log) => log.channel === 'Email')
+  const calendar = logs.find((log) => log.channel === 'Calendar')
+  const parts = [`${id} created and added to the TerraLink schedule.`]
+  if (email) parts.push(email.status === 'Sent' ? `Email sent to ${email.recipient.split(' · ')[0]}.` : `Email not sent: ${email.detail}`)
+  if (calendar) parts.push(calendar.status === 'Failed' ? `Google Calendar: ${calendar.detail}` : 'Added to Google Calendar.')
+  return parts.join(' ')
 }
 
 export function describeCalendarResult(result) {
   if (result.mode === 'api') return 'Event added to Google Calendar.'
   if (result.mode === 'link') return 'Google Calendar opened with the event prefilled. Save it there to confirm.'
   return `Calendar event failed: ${result.log?.detail || 'the request was not completed.'}`
-}
-
-export function describeWhatsAppResult(log) {
-  return log.status === 'Failed' ? `WhatsApp reminder not prepared: ${log.detail}` : 'WhatsApp opened with the reminder message.'
-}
-
-export function getLogRecord(log) {
-  if (log.meetingId) return { label: log.meetingId, to: `/schedule?meeting=${encodeURIComponent(log.meetingId)}` }
-  if (log.taskId && !log.taskId.startsWith('TEST')) return { label: log.taskId, to: `/tasks?task=${encodeURIComponent(log.taskId)}` }
-  return null
 }

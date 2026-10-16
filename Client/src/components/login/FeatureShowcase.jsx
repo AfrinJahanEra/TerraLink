@@ -52,7 +52,7 @@ const FEATURES = [
     eyebrow: 'Field operations',
     title: 'Carry decisions into assigned field work',
     description: 'Create structured tasks with ownership, due dates, evidence, progress and approvals that remain connected to the originating site.',
-    capabilities: ['Assign work by role and availability', 'Track comments, evidence and status', 'Send calendar, email and WhatsApp actions'],
+    capabilities: ['Assign work by role and availability', 'Track comments, evidence and status', 'Send calendar and email actions'],
   },
   {
     id: 'budget',

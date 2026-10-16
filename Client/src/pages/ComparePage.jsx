@@ -145,7 +145,7 @@ export function ComparePage() {
             <div className="flex flex-wrap items-center gap-2">
               {canSave
                 ? <Button type="button" onClick={save} disabled={savedAlready}>{savedAlready ? <><Check size={15} />Saved</> : <><Satellite size={15} />Save to site record</>}</Button>
-                : <p className="max-w-[240px] text-[11px] leading-5 text-slate-400">The project manager or office operator can save a measurement.</p>}
+                : <p className="max-w-[240px] text-[11px] leading-5 text-slate-400">Only the project manager can save a measurement.</p>}
               <Button as={Link} to={`/sites/${site.id}`} variant="secondary">Open site review</Button>
             </div>
           </section>

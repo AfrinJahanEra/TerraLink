@@ -104,8 +104,8 @@ export function TaskWorkflow({ task, role, onSetStatus, onSubmitCompletion }) {
   const [panel, setPanel] = useState(null)
   const isManager = can(role.id, 'tasks.review')
   const canCancel = can(role.id, 'tasks.cancel')
-  // The manager can move any task; a coordinator only their own.
-  const canMove = can(role.id, 'tasks.progress') && (role.id !== 'coordinator' || task.assignee === role.user.name)
+  // Only the assignee does the work. The manager reviews it, so approving and doing are never the same person.
+  const canMove = can(role.id, 'tasks.progress') && task.assignee === role.user.name
   const close = () => setPanel(null)
 
   const run = (action) => {
@@ -128,7 +128,7 @@ export function TaskWorkflow({ task, role, onSetStatus, onSubmitCompletion }) {
         {canCancel && (task.status === 'completed' || task.status === 'cancelled') && <Button type="button" variant="secondary" className="min-h-9 px-3 text-xs" onClick={() => run(() => onSetStatus('open'))}><RotateCcw size={14} />Reopen task</Button>}
         {canCancel && ['open', 'in_progress', 'blocked'].includes(task.status) && <Button type="button" variant="ghost" className="min-h-9 px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => setPanel('cancel')}><Ban size={14} />Cancel task</Button>}
         {task.status === 'awaiting_verification' && !isManager && <p className="text-xs leading-5 text-slate-500">Completion evidence was submitted. The project manager will review it.</p>}
-        {!canMove && !isManager && task.status !== 'awaiting_verification' && task.status !== 'completed' && task.status !== 'cancelled' && <p className="text-xs leading-5 text-slate-500">{task.assignee} updates this task’s progress. The project manager approves and closes it.</p>}
+        {!canMove && ['open', 'in_progress', 'blocked'].includes(task.status) && <p className="text-xs leading-5 text-slate-500">{task.assignee} does the work and updates this task’s progress. You review the evidence once it is submitted.</p>}
       </div>
 
       {panel === 'block' && <ReasonForm label="What is blocking the work?" placeholder="For example: access to the bank is closed until Sunday" confirmLabel="Mark as blocked" onCancel={close} onConfirm={(reason) => run(() => onSetStatus('blocked', reason))} />}
