@@ -1,3 +1,4 @@
+import { can } from '../../constants/access'
 import {
   CalendarCheck,
   CalendarDays,
@@ -35,7 +36,7 @@ function ActionButton({ icon: Icon, children, onClick, disabled }) {
 
 export function MeetingDrawer({ meeting, role, members, sites, tasks, logs, onClose, onAddToCalendar, onDownloadIcs, onEmailInvites, onWhatsApp, onUpdateStatus }) {
   const [sending, setSending] = useState(false)
-  const canManage = role.id === 'manager' || role.id === 'operator'
+  const canManage = can(role.id, 'schedule.manage')
   const type = MEETING_TYPES[meeting.type]
   const status = MEETING_STATUS[meeting.status] ?? MEETING_STATUS.scheduled
   const site = sites.find((item) => item.id === meeting.siteId)

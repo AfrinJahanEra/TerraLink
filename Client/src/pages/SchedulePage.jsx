@@ -1,3 +1,4 @@
+import { isTaskClosed } from '../constants/status'
 import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, List, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -29,15 +30,15 @@ import {
 import { isTaskOverdue } from '../utils/tasks'
 
 const legend = [
-  ['bg-sky-500', 'Meeting'],
-  ['bg-emerald-500', 'Completed'],
-  ['bg-amber-500', 'Task deadline'],
-  ['bg-rose-500', 'Overdue'],
+  ['bg-brand-500', 'Meeting'],
+  ['bg-brand-800', 'Completed'],
+  ['bg-slate-400', 'Task deadline'],
+  ['bg-amber-500', 'Overdue'],
 ]
 
 export function SchedulePage() {
   const {
-    role, sites, tasks, teamMembers, meetings, notificationLogs,
+    role, can, scope, sites, teamMembers, notificationLogs,
     createMeeting, updateMeeting, addMeetingToCalendar, downloadMeetingIcs, emailMeetingInvites, whatsappMeetingReminder,
   } = useApp()
   const navigate = useNavigate()
@@ -49,17 +50,12 @@ export function SchedulePage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [showDeadlines, setShowDeadlines] = useState(true)
   const [notice, showNotice] = useNotice(4000)
-  const canManage = role.id === 'manager' || role.id === 'operator'
+  const canManage = can('schedule.manage')
   const memberId = teamMembers.find((member) => member.name === role.user.name)?.id
 
-  const visibleMeetings = useMemo(
-    () => role.id === 'coordinator' ? meetings.filter((meeting) => meeting.attendeeIds.includes(memberId)) : meetings,
-    [meetings, memberId, role.id],
-  )
-  const visibleTasks = useMemo(
-    () => role.id === 'coordinator' ? tasks.filter((task) => task.assignee === role.user.name) : tasks,
-    [role, tasks],
-  )
+  // Scoped already: a coordinator receives only meetings they attend and their own deadlines.
+  const visibleMeetings = scope.meetings
+  const visibleTasks = scope.tasks
   const items = useMemo(() => {
     const filteredMeetings = typeFilter === 'all' ? visibleMeetings : visibleMeetings.filter((meeting) => meeting.type === typeFilter)
     return buildScheduleItems({ meetings: filteredMeetings, tasks: showDeadlines ? visibleTasks : [] })
@@ -72,7 +68,7 @@ export function SchedulePage() {
   const upcoming = visibleMeetings.filter((meeting) => meeting.status === 'scheduled' && meeting.date >= today)
   const notOnCalendar = upcoming.filter((meeting) => !meeting.calendarStatus || meeting.calendarStatus === 'none')
   const fieldVisits = upcoming.filter((meeting) => meeting.type === 'field_visit' && meeting.date <= addDaysToKey(today, 14))
-  const openDeadlines = visibleTasks.filter((task) => task.status !== 'reported_complete' && task.dueDate)
+  const openDeadlines = visibleTasks.filter((task) => !isTaskClosed(task) && task.dueDate)
   const dueThisWeek = openDeadlines.filter((task) => task.dueDate >= today && task.dueDate <= weekEnd)
   const overdue = openDeadlines.filter(isTaskOverdue)
 
@@ -117,7 +113,7 @@ export function SchedulePage() {
   }
 
   function handleCreate(draft, options) {
-    const highest = meetings.reduce((max, item) => Math.max(max, Number(item.id.replace('MTG-', '')) || 0), 0)
+    const highest = scope.meetings.reduce((max, item) => Math.max(max, Number(item.id.replace('MTG-', '')) || 0), 0)
     const meeting = {
       ...draft,
       id: `MTG-${String(highest + 1).padStart(3, '0')}`,
@@ -170,7 +166,7 @@ export function SchedulePage() {
           { label: 'deadlines this week', value: dueThisWeek.length, tone: dueThisWeek.length ? 'amber' : undefined },
           { label: 'overdue deadlines', value: overdue.length, tone: overdue.length ? 'rose' : undefined },
         ]}
-        note={role.id === 'coordinator' ? 'Showing meetings you attend and your own deadlines' : 'Times shown in Asia/Dhaka (UTC+06:00)'}
+        note={role.id === 'coordinator' ? 'Showing meetings you attend and your own deadlines' : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -245,7 +241,7 @@ export function SchedulePage() {
         open={formOpen}
         initial={formInitial}
         sites={sites}
-        tasks={tasks}
+        tasks={scope.tasks}
         members={teamMembers}
         organizerId={memberId}
         onClose={clearParams}
@@ -258,7 +254,7 @@ export function SchedulePage() {
           role={role}
           members={teamMembers}
           sites={sites}
-          tasks={tasks}
+          tasks={scope.tasks}
           logs={notificationLogs.filter((log) => log.meetingId === selectedMeeting.id)}
           onClose={clearParams}
           onAddToCalendar={() => addMeetingToCalendar(selectedMeeting).then((result) => showNotice(describeCalendarResult(result)))}

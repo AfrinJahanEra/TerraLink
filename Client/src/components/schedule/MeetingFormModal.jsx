@@ -92,7 +92,7 @@ export function MeetingFormModal({ open, initial = {}, sites, tasks, members, or
 
         <form onSubmit={submit} className="space-y-4 p-5">
           <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
-            <label className="block"><span className="text-xs font-semibold text-slate-700">Title</span><input value={title} onChange={(event) => setTitle(event.target.value)} required placeholder="e.g. Pond A field verification visit" className={inputClass} /></label>
+            <label className="block"><span className="text-xs font-semibold text-slate-700">Title</span><input value={title} onChange={(event) => setTitle(event.target.value)} required placeholder="e.g. Gulshan–Baridhara Lake field verification visit" className={inputClass} /></label>
             <label className="block"><span className="text-xs font-semibold text-slate-700">Meeting type</span><select value={type} onChange={(event) => changeType(event.target.value)} className={inputClass}>{Object.entries(MEETING_TYPES).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}</select></label>
           </div>
 

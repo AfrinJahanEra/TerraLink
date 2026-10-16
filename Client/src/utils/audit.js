@@ -1,3 +1,5 @@
+import { VERDICT } from '../constants/observations'
+import { REPORT_STATUS } from '../constants/reports'
 import { SITE_STATUS } from '../constants/status'
 import { MEETING_TYPES } from '../data/schedule'
 import { getLogRecord } from './communications'
@@ -5,7 +7,7 @@ import { formatBdt } from './currency'
 
 const MONTHS = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 }
 
-export const AUDIT_MODULES = ['Tasks', 'Monitoring', 'Finance', 'Schedule', 'Communications']
+export const AUDIT_MODULES = ['Tasks', 'Monitoring', 'Community', 'Finance', 'Schedule', 'Communications']
 
 /** Activity entries store either an ISO `at` timestamp or a display date such as "08 Oct 2026". */
 function parseActivityTime(entry) {
@@ -15,7 +17,7 @@ function parseActivityTime(entry) {
   return { at: new Date(Number(match[3]), MONTHS[match[2]], Number(match[1]), 12).toISOString(), dateOnly: true }
 }
 
-export function buildAuditEvents({ tasks, decisions, expenses, meetings, notificationLogs, sites }) {
+export function buildAuditEvents({ tasks, decisions, expenses, meetings, notificationLogs, sites, communityReports = [], comparisons = [] }) {
   const siteNames = new Map(sites.map((site) => [site.id, site.name]))
   const events = []
 
@@ -36,6 +38,34 @@ export function buildAuditEvents({ tasks, decisions, expenses, meetings, notific
       to: `/sites/${decision.siteId}`,
       event: `Review decision: ${SITE_STATUS[decision.status]?.label ?? decision.status}`,
       actor: decision.decidedBy,
+    })
+  })
+
+  comparisons.forEach((comparison) => {
+    events.push({
+      id: `comparison-${comparison.id}`,
+      at: comparison.savedAt,
+      dateOnly: false,
+      module: 'Monitoring',
+      record: siteNames.get(comparison.siteId) ?? comparison.siteId,
+      to: `/sites/${comparison.siteId}`,
+      event: `Satellite measurement saved: ${VERDICT[comparison.result.verdict].label}`,
+      actor: comparison.savedBy,
+    })
+  })
+
+  communityReports.forEach((report) => {
+    report.history.forEach((entry) => {
+      events.push({
+        id: `report-${report.id}-${entry.id}`,
+        at: entry.at,
+        dateOnly: false,
+        module: 'Community',
+        record: `${report.id} · ${siteNames.get(report.siteId) ?? 'Other location'}`,
+        to: `/community?report=${report.id}`,
+        event: entry.status === 'pending' ? 'Community report submitted' : `Report marked ${REPORT_STATUS[entry.status]?.label.toLowerCase() ?? entry.status}${entry.note ? `: ${entry.note}` : ''}`,
+        actor: entry.by,
+      })
     })
   })
 

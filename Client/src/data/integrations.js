@@ -14,7 +14,7 @@ export const defaultIntegrationSettings = {
 }
 
 export const ORGANIZATION_PROFILE = {
-  name: 'Probah Wetland Programme',
+  name: 'TerraLink Wetland Programme',
   partner: 'TerraLink field monitoring unit',
   office: 'Project office, Dhaka',
   timeZone: 'Asia/Dhaka (UTC+06:00)',

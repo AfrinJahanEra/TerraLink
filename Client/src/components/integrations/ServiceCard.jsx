@@ -22,7 +22,7 @@ export function ServiceCard({
           <div><h2 className="text-sm font-semibold text-slate-900">{name}</h2><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
-          <span className={`size-1.5 rounded-full ${connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />{statusLabel}
+          <span className={`size-1.5 rounded-full ${connected ? 'bg-brand-600' : 'bg-amber-500'}`} />{statusLabel}
         </span>
       </div>
 

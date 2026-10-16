@@ -1,3 +1,4 @@
+import { isTaskClosed } from '../constants/status'
 import { ArrowRight, CalendarPlus, ClipboardPlus, CloudOff, ScanSearch } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
@@ -17,13 +18,14 @@ function SectionHeader({ title, description, count }) {
 }
 
 export function ReviewQueuePage() {
-  const { role, sites, tasks, decisions } = useApp()
-  const canAct = role.id === 'manager' || role.id === 'operator'
-  const awaiting = sites.filter((site) => site.status === 'needs_review')
+  const { can, sites, tasks, decisions } = useApp()
+  const canAct = can('schedule.manage')
+  const canCreateTask = can('tasks.create')
+  const awaiting = sites.filter((site) => site.status === 'needs_review' || site.status === 'reported_issue')
   const dataGaps = sites.filter((site) => site.status === 'insufficient_data')
   const register = Object.values(decisions ?? {}).sort((a, b) => String(b.decidedAt).localeCompare(String(a.decidedAt)))
   const siteById = new Map(sites.map((site) => [site.id, site]))
-  const openTasksFor = (siteId) => tasks.filter((task) => task.siteId === siteId && task.status !== 'reported_complete').length
+  const openTasksFor = (siteId) => tasks.filter((task) => task.siteId === siteId && !isTaskClosed(task)).length
   const followUps = sites.filter((site) => site.status === 'confirmed').length
 
   return (
@@ -31,7 +33,7 @@ export function ReviewQueuePage() {
       <PageHeader
         eyebrow="Monitoring"
         title="Review queue"
-        description="Satellite observations waiting for a documented manager decision, sites with data-quality gaps, and the register of recorded decisions."
+        description="Water bodies waiting for a documented manager decision, sites where imagery cannot support a comparison, and the register of recorded decisions."
       />
 
       <SummaryStrip
@@ -41,37 +43,37 @@ export function ReviewQueuePage() {
           { label: 'confirmed for follow-up', value: followUps, tone: followUps ? 'rose' : undefined },
           { label: 'decisions recorded', value: register.length },
         ]}
-        note={canAct ? 'Decisions are recorded on each change-analysis page' : 'Read-only view for field coordinators'}
+        note={can('sites.decide') ? undefined : 'Read-only: the project manager records decisions'}
       />
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-card">
-        <SectionHeader title="Awaiting review" description="Observations that need verification before any action is taken" count={`${awaiting.length} pending`} />
+        <SectionHeader title="Awaiting review" description="Sites to review before any action is taken, including those with community reports" count={`${awaiting.length} pending`} />
         {awaiting.length ? (
           <div className="divide-y divide-slate-100">
             {awaiting.map((site) => (
               <div key={site.id} className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center">
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><ScanSearch size={17} /></span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-slate-800">{site.name} · {site.location}</p><Badge tone="amber" className="px-2 py-0.5 text-[10px]">{SITE_STATUS.needs_review.label}</Badge></div>
+                  <div className="flex flex-wrap items-center gap-2"><p className="text-xs font-semibold text-slate-800">{site.name} · {site.location}</p><Badge tone={SITE_STATUS[site.status].tone} className="px-2 py-0.5 text-[10px]">{SITE_STATUS[site.status].label}</Badge></div>
                   <p className="mt-1 text-[11px] leading-5 text-slate-500">{site.reviewNote}</p>
-                  <p className="mt-1 text-[10px] text-slate-400">Change {site.change > 0 ? '+' : ''}{site.change}% · {site.comparison} · Last observed {site.lastObserved} · {openTasksFor(site.id)} open tasks</p>
+                  <p className="mt-1 text-[10px] text-slate-400">{site.area} mapped · {site.openReports} open community report{site.openReports === 1 ? '' : 's'} · {openTasksFor(site.id)} open tasks</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   {canAct && <Link to={buildScheduleLink({ new: 'field_visit', site: site.id, title: `${site.name} field verification visit` })} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"><CalendarPlus size={13} className="text-slate-500" />Schedule visit</Link>}
-                  {canAct && <Link to={`/tasks?new=task&site=${site.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"><ClipboardPlus size={13} className="text-slate-500" />Create task</Link>}
-                  <Link to={`/sites/${site.id}`} className="inline-flex h-9 items-center gap-1 rounded-lg bg-slate-800 px-3 text-[11px] font-semibold text-white hover:bg-slate-900">Review <ArrowRight size={13} /></Link>
+                  {canCreateTask && <Link to={`/tasks?new=task&site=${site.id}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"><ClipboardPlus size={13} className="text-slate-500" />Create task</Link>}
+                  <Link to={`/sites/${site.id}`} className="inline-flex h-9 items-center gap-1 rounded-lg bg-brand-700 px-3 text-[11px] font-semibold text-white hover:bg-brand-800">Review <ArrowRight size={13} /></Link>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="px-5 py-10 text-center text-xs text-slate-500">No observations currently require review.</p>
+          <p className="px-5 py-10 text-center text-xs text-slate-500">No water bodies currently require review.</p>
         )}
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <section className="rounded-xl border border-slate-200 bg-white shadow-card">
-          <SectionHeader title="Data quality" description="Sites where imagery cannot support a reliable comparison" count={dataGaps.length} />
+          <SectionHeader title="Data quality" description="Water bodies too small or unclear for a reliable comparison" count={dataGaps.length} />
           {dataGaps.length ? (
             <ul className="divide-y divide-slate-100">
               {dataGaps.map((site) => (
@@ -80,7 +82,7 @@ export function ReviewQueuePage() {
                   <div className="min-w-0 flex-1">
                     <Link to={`/sites/${site.id}`} className="text-xs font-semibold text-slate-800 hover:text-brand-700">{site.name} · {site.location}</Link>
                     <p className="mt-0.5 text-[11px] leading-5 text-slate-500">{site.reviewNote}</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">Clear-sky coverage {site.clearCoverage}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">{site.area} mapped, under the one hectare minimum for 10 m imagery</p>
                   </div>
                   {canAct && <Link to={buildScheduleLink({ new: 'field_visit', site: site.id, title: `${site.name} ground observation` })} title="Schedule ground observation" aria-label={`Schedule ground observation at ${site.name}`} className="grid size-8 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"><CalendarPlus size={15} /></Link>}
                 </li>
@@ -116,7 +118,7 @@ export function ReviewQueuePage() {
               </table>
             </div>
           ) : (
-            <p className="px-5 py-8 text-center text-xs text-slate-500">No decisions have been recorded yet. Open an observation to record one.</p>
+            <p className="px-5 py-8 text-center text-xs text-slate-500">No decisions have been recorded yet. Open a site to record one.</p>
           )}
         </section>
       </div>

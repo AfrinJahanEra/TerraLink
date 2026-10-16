@@ -1,3 +1,4 @@
+import { addDays, todayInDhaka } from '../../utils/reports'
 import { CalendarDays, ClipboardPlus, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../ui/Button'
@@ -5,7 +6,7 @@ import { Button } from '../ui/Button'
 export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
   const [title, setTitle] = useState('Verify observed water-area change')
   const [assignee, setAssignee] = useState(members[0]?.name ?? '')
-  const [dueDate, setDueDate] = useState('2026-10-12')
+  const [dueDate, setDueDate] = useState(addDays(todayInDhaka(), 5))
   const [priority, setPriority] = useState('High')
   const [notes, setNotes] = useState('Visit the site, capture geotagged evidence, and report field conditions.')
 
@@ -40,7 +41,7 @@ export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((item) => <option key={item.id} value={item.name}>{item.name}</option>)}</select></label>
-            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Due date</span><input type="date" value={dueDate} min="2026-10-09" onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
+            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Due date</span><input type="date" value={dueDate} min={todayInDhaka()} onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           </div>
 
           <label className="block"><span className="text-xs font-semibold text-slate-700">Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400"><option>High</option><option>Medium</option><option>Low</option></select></label>

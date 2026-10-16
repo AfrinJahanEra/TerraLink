@@ -31,7 +31,7 @@ export function MemberCard({ member, assignedCount, onEdit, canEdit }) {
 
       <div className="mt-4">
         <div className="flex items-center justify-between text-[11px]"><span className="flex items-center gap-1.5 font-medium text-slate-600"><BriefcaseBusiness size={13} className="text-slate-500" />Assigned open tasks</span><span className="font-semibold text-slate-800">{assignedCount} / {member.capacity}</span></div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label={`${member.name} workload`} aria-valuenow={workload} aria-valuemin="0" aria-valuemax="100"><div className={`h-full rounded-full ${workload >= 100 ? 'bg-rose-500' : workload >= 70 ? 'bg-amber-500' : 'bg-brand-600'}`} style={{ width: `${workload}%` }} /></div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-label={`${member.name} workload`} aria-valuenow={workload} aria-valuemin="0" aria-valuemax="100"><div className={`h-full rounded-full ${workload >= 100 ? 'bg-amber-600' : workload >= 70 ? 'bg-amber-500' : 'bg-brand-600'}`} style={{ width: `${workload}%` }} /></div>
         <p className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400"><UserRoundCheck size={12} className="text-slate-500" />{workload}% planned workload</p>
       </div>
     </article>

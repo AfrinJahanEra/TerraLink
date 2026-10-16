@@ -1,36 +1,32 @@
 import {
   ArrowRight,
-  CalendarRange,
+  Camera,
   CircleAlert,
-  CircleCheck,
   ClipboardCheck,
   Droplets,
   FileClock,
   Files,
-  MapPinned,
+  OctagonAlert,
   ReceiptText,
-  RefreshCw,
+  RotateCcw,
+  ShieldCheck,
+  TriangleAlert,
   WalletCards,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ActivityTimeline } from '../components/dashboard/ActivityTimeline'
-import { AssistantPrompt } from '../components/dashboard/AssistantPrompt'
-import { BudgetCard, MonitoringTrend } from '../components/dashboard/InsightsPanel'
+import { Link, useNavigate } from 'react-router-dom'
+import { BudgetCard } from '../components/dashboard/InsightsPanel'
 import { KpiCard } from '../components/dashboard/KpiCard'
-import { MapPreview } from '../components/dashboard/MapPreview'
 import { SiteSnapshot } from '../components/dashboard/SiteSnapshot'
 import { TaskList } from '../components/dashboard/TaskList'
 import { UpcomingSchedule } from '../components/dashboard/UpcomingSchedule'
-import { Badge } from '../components/ui/Badge'
-import { Button } from '../components/ui/Button'
-import {
-  dashboardActivities,
-  trendData,
-} from '../data/dashboard'
-import { SITE_STATUS } from '../constants/status'
+import { AccessPanel } from '../components/layout/AccessPanel'
+import { WetlandMap } from '../components/map/WetlandMap'
+import { ROLE_ACCESS } from '../constants/access'
+import { OPEN_REPORT_STATUSES, REPORT_CATEGORIES } from '../constants/reports'
 import { useApp } from '../hooks/useApp'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import { formatBdt } from '../utils/currency'
+import { isTaskOverdue } from '../utils/tasks'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -40,200 +36,208 @@ function getGreeting() {
 }
 
 function formatToday() {
-  return new Intl.DateTimeFormat('en-GB', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date())
+  return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date())
 }
 
-const roleViews = {
+/** What each role's dashboard is for. The copy matches the access table. */
+const VIEWS = {
   manager: {
-    scope: 'Full programme oversight',
-    guidance: 'Review findings, approve follow-up work, and monitor programme costs.',
+    guidance: 'Verify reports, review sites, assign work, approve what is finished, and watch the budget.',
+    mapTitle: 'Wetland monitoring map',
+    mapHint: 'Select an outline for its record or a diamond for a community report',
     taskTitle: 'Programme tasks',
-    taskSubtitle: 'Priority work across all sites',
-    budgetTitle: 'Budget overview',
-    budgetSubtitle: 'Current programme budget',
-    actionLabel: 'Review finding',
-    actionTo: '/sites/pond-a',
-    priorityTitle: 'Priority review',
+    taskSubtitle: 'Work across every site',
+    priorityTitle: 'Needs your decision',
+    priorityLink: '/reviews',
+    priorityLinkLabel: 'Review queue',
   },
   coordinator: {
-    scope: 'Assigned field operations',
-    guidance: 'Update your assigned checks, evidence, progress, and actual expenses.',
+    guidance: 'Your assigned tasks, the sites they are at, your schedule, and your expenses.',
+    mapTitle: 'Map of my sites',
+    mapHint: 'The water bodies you have tasks at',
     taskTitle: 'My assigned tasks',
-    taskSubtitle: 'Work assigned to Rahim Uddin',
-    budgetTitle: 'My field costs',
-    budgetSubtitle: 'Costs recorded against assigned work',
-    actionLabel: 'Open assignment',
-    actionTo: '/tasks',
-    priorityTitle: 'Next field check',
-    siteIds: ['pond-a', 'pond-b', 'lake-d'],
-    taskAssignee: 'Rahim Uddin',
+    taskSubtitle: 'Only work assigned to you',
+    priorityTitle: 'Needs your attention',
+    priorityLink: '/tasks',
+    priorityLinkLabel: 'My tasks',
   },
   operator: {
-    scope: 'Records and reporting access',
-    guidance: 'Maintain task, team, evidence, and expense records for the programme.',
-    taskTitle: 'Records requiring updates',
-    taskSubtitle: 'Open records across the programme',
-    budgetTitle: 'Expense records',
-    budgetSubtitle: 'Planned and recorded project spending',
-    actionLabel: 'Update record',
-    actionTo: '/reviews',
-    priorityTitle: 'Record requiring action',
+    guidance: 'Keep records complete: receipts, reports, schedules and team details. Read-only on decisions.',
+    mapTitle: 'Wetland monitoring map',
+    mapHint: 'Read-only overview of every water body',
+    taskTitle: 'Tasks across the programme',
+    taskSubtitle: 'Read-only; the manager assigns and closes them',
+    priorityTitle: 'Records to follow up',
+    priorityLink: '/expenses',
+    priorityLinkLabel: 'Expenses',
   },
 }
 
-function buildKpis(roleId, needsReview, visibleSites, visibleTasks) {
-  const openTasks = visibleTasks.filter((task) => task.status !== 'reported_complete')
+const hasReceipt = (expense) => Boolean(expense.receiptNote?.trim()) || Boolean(expense.receiptPhotos?.length)
+const sumAmount = (list) => list.reduce((total, expense) => total + Number(expense.amount || 0), 0)
 
-  if (roleId === 'coordinator') return [
-    { label: 'Assigned sites', value: visibleSites.length, trend: 12, trendLabel: 'this month', icon: MapPinned, to: '/map' },
-    { label: 'My open tasks', value: openTasks.length, trend: -20, trendLabel: 'vs. last week', icon: ClipboardCheck, to: '/tasks' },
-    { label: 'Due today', value: openTasks.filter((task) => task.due === 'Today').length, trend: 0, trendLabel: 'requires attention', icon: FileClock, to: '/tasks' },
-    { label: 'Costs recorded', value: '৳4.2k', trend: 8, trendLabel: 'this month', icon: ReceiptText, to: '/expenses' },
-  ]
-  if (roleId === 'operator') return [
-    { label: 'Site records', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Files, to: '/sites' },
-    { label: 'Review queue', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/reviews' },
-    { label: 'Open tasks', value: openTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
-    { label: 'Reports ready', value: 3, trend: 50, trendLabel: 'this month', icon: FileClock, to: '/reports' },
-  ]
+function buildKpis(roleId, { scope, budgetSummary }) {
+  const open = scope.tasks.filter((task) => task.status !== 'completed' && task.status !== 'cancelled')
+  const pendingExpenses = scope.expenses.filter((expense) => expense.approvalStatus === 'pending')
+  const awaitingReports = scope.communityReports.filter((report) => report.status === 'pending' || report.status === 'under_review').length
+
+  if (roleId === 'coordinator') {
+    return [
+      { label: 'My open tasks', value: open.length, detail: 'Not yet completed', icon: ClipboardCheck, to: '/tasks' },
+      { label: 'Due today or overdue', value: open.filter((task) => task.due === 'Today' || isTaskOverdue(task)).length, detail: 'Do these first', icon: FileClock, to: '/tasks' },
+      { label: 'Awaiting verification', value: scope.tasks.filter((task) => task.status === 'awaiting_verification').length, detail: 'Waiting for the manager', icon: ShieldCheck, to: '/tasks' },
+      { label: 'Expenses pending', value: formatBdt(sumAmount(pendingExpenses)), detail: `${pendingExpenses.length} awaiting approval`, icon: ReceiptText, to: '/expenses' },
+    ]
+  }
+  if (roleId === 'operator') {
+    return [
+      { label: 'Site records', value: scope.sites.length, detail: 'In the register', icon: Files, to: '/sites' },
+      { label: 'Reports with the manager', value: awaitingReports, detail: 'Pending or under review', icon: Camera, to: '/community' },
+      { label: 'Expenses pending', value: pendingExpenses.length, detail: 'Awaiting manager approval', icon: ReceiptText, to: '/expenses' },
+      { label: 'Without a receipt', value: scope.expenses.filter((expense) => !hasReceipt(expense)).length, detail: 'Records to complete', icon: CircleAlert, to: '/expenses' },
+    ]
+  }
   return [
-    { label: 'Monitored sites', value: visibleSites.length, trend: 25, trendLabel: 'this quarter', icon: Droplets, to: '/sites' },
-    { label: 'Needs review', value: needsReview, trend: -33, trendLabel: 'vs. last week', icon: CircleAlert, to: '/reviews' },
-    { label: 'Open tasks', value: openTasks.length, trend: 14, trendLabel: 'this week', icon: ClipboardCheck, to: '/tasks' },
-    { label: 'Budget spent', value: '৳18.2k', trend: 7.8, trendLabel: 'this month', icon: WalletCards, to: '/budget' },
+    { label: 'Water bodies monitored', value: scope.sites.length, detail: 'Dhaka pilot sites', icon: Droplets, to: '/sites' },
+    { label: 'Reports awaiting review', value: awaitingReports, detail: 'Pending or under review', icon: Camera, to: '/community' },
+    { label: 'Awaiting your verification', value: scope.tasks.filter((task) => task.status === 'awaiting_verification').length, detail: 'Completion evidence to check', icon: ShieldCheck, to: '/tasks' },
+    { label: 'Budget spent', value: formatBdt(budgetSummary.spent), detail: 'Approved costs only', icon: WalletCards, to: '/budget' },
   ]
 }
 
-function RoleScope({ role, view }) {
-  const Icon = role.icon
+/** The short list of things each role should open next. */
+function buildPriorities(roleId, { scope, siteName }) {
+  const taskItem = (task, title, icon) => ({ id: `${task.id}-${title}`, title, detail: `${task.site} · ${task.assignee}`, to: `/tasks?task=${task.id}`, icon })
+
+  if (roleId === 'coordinator') {
+    const mine = scope.tasks
+    return [
+      ...mine.filter((task) => task.status === 'in_progress' && task.lastReturn).map((task) => taskItem(task, `${task.title}: returned for more work`, RotateCcw)),
+      ...mine.filter((task) => task.status === 'blocked').map((task) => taskItem(task, `${task.title} is blocked`, OctagonAlert)),
+      ...mine.filter(isTaskOverdue).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
+      ...mine.filter((task) => task.due === 'Today' && !isTaskOverdue(task) && task.status !== 'awaiting_verification' && task.status !== 'completed').map((task) => taskItem(task, `${task.title} is due today`, FileClock)),
+    ].slice(0, 6)
+  }
+
+  if (roleId === 'operator') {
+    return [
+      ...scope.expenses.filter((expense) => expense.approvalStatus === 'pending').slice(0, 3).map((expense) => ({ id: expense.id, title: `${expense.id} is waiting for approval`, detail: `${formatBdt(expense.amount)} · ${expense.description}`, to: '/expenses', icon: ReceiptText })),
+      ...scope.expenses.filter((expense) => !hasReceipt(expense)).slice(0, 3).map((expense) => ({ id: `${expense.id}-receipt`, title: `${expense.id} has no receipt`, detail: `${formatBdt(expense.amount)} · ${expense.description}`, to: '/expenses', icon: CircleAlert })),
+      ...scope.tasks.filter(isTaskOverdue).slice(0, 2).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
+    ].slice(0, 6)
+  }
+
+  return [
+    ...scope.communityReports.filter((report) => report.status === 'pending').slice(0, 3).map((report) => ({ id: report.id, title: `${REPORT_CATEGORIES[report.category].label} reported`, detail: `${siteName(report.siteId) ?? 'Other location'} · waiting for verification`, to: `/community?report=${report.id}`, icon: Camera })),
+    ...scope.tasks.filter((task) => task.status === 'awaiting_verification').slice(0, 2).map((task) => taskItem(task, `${task.title} is awaiting verification`, ShieldCheck)),
+    ...scope.tasks.filter(isTaskOverdue).slice(0, 2).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
+    ...scope.sites.filter((site) => site.status === 'needs_review').slice(0, 2).map((site) => ({ id: site.id, title: `${site.name} needs a review decision`, detail: 'Compare satellite imagery and record a decision', to: `/sites/${site.id}`, icon: CircleAlert })),
+  ].slice(0, 6)
+}
+
+function PriorityList({ view, items }) {
   return (
-    <div className="flex items-center gap-3 border-l-2 border-slate-300 pl-3">
-      <Icon size={17} className="shrink-0 text-slate-600" />
-      <p className="text-xs leading-5 text-slate-500"><strong className="font-semibold text-slate-700">{view.scope}.</strong> {view.guidance}</p>
-    </div>
+    <section className="rounded-xl border border-slate-200 bg-white shadow-card">
+      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div><h2 className="text-sm font-semibold text-slate-900">{view.priorityTitle}</h2><p className="mt-0.5 text-xs text-slate-400">Open these first</p></div>
+        <Link to={view.priorityLink} className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">{view.priorityLinkLabel} <ArrowRight size={14} className="text-slate-500" /></Link>
+      </div>
+      {items.length ? (
+        <ul className="divide-y divide-slate-100">
+          {items.map((item) => {
+            const Icon = item.icon
+            return (
+              <li key={item.id}>
+                <Link to={item.to} className="flex items-start gap-3 px-5 py-3.5 transition hover:bg-slate-50">
+                  <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><Icon size={15} /></span>
+                  <span className="min-w-0"><span className="block text-xs font-semibold text-slate-800">{item.title}</span><span className="mt-0.5 block text-[11px] text-slate-400">{item.detail}</span></span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p className="px-5 py-10 text-center text-xs text-slate-500">Nothing needs attention right now.</p>
+      )}
+    </section>
   )
 }
 
-function PriorityObservation({ site, view }) {
-  const status = SITE_STATUS[site.status]
-  const requiresReview = site.status === 'needs_review'
-
+/** A coordinator's own money picture: what is approved, what is waiting, and what was rejected. */
+function MyExpenses({ expenses }) {
+  const by = (status) => expenses.filter((expense) => expense.approvalStatus === status)
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
-      <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-600"><CircleAlert size={18} /></span>
-          <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-semibold text-slate-900">{requiresReview ? view.priorityTitle : 'Latest monitored site'}</h2><Badge tone={status.tone}>{status.label}</Badge></div><p className="mt-0.5 text-xs text-slate-500">{requiresReview ? 'A possible water-area change needs human verification.' : 'The latest manager decision is reflected across the workspace.'}</p></div>
-        </div>
-        <Button as={Link} to={view.actionTo} className="min-h-9 self-start px-3 text-xs sm:self-auto">{view.actionLabel} <ArrowRight size={14} /></Button>
-      </div>
-
-      <div className="grid gap-6 p-5 lg:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]">
-        <div className="grid grid-cols-2 gap-2">
-          {[['March 2022', site.beforeImage], ['March 2024', site.afterImage]].map(([label, image]) => (
-            <figure key={label} className="relative overflow-hidden rounded-lg bg-slate-100">
-              <img src={image} alt={`Illustrative overhead wetland view for ${label}`} className="h-36 w-full object-cover sm:h-44" />
-              <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between rounded-md bg-slate-950/70 px-2 py-1 text-[9px] text-white backdrop-blur-sm"><span>{label}</span><span>Sample</span></figcaption>
-            </figure>
-          ))}
-        </div>
-        <div className="flex flex-col justify-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.13em] text-brand-700">{site.name} · {site.location}</p>
-          <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">Visible water area may have decreased</h3>
-          <div className="mt-5 grid grid-cols-3 divide-x divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/60 py-3">
-            <div className="px-3"><p className="text-[10px] text-slate-400">Earlier</p><p className="mt-1 text-base font-bold text-slate-800">12.0 ha</p></div>
-            <div className="px-3"><p className="text-[10px] text-slate-400">Later</p><p className="mt-1 text-base font-bold text-slate-800">9.5 ha</p></div>
-            <div className="px-3"><p className="text-[10px] text-slate-400">Change</p><p className="mt-1 text-base font-bold text-slate-900">−20.8%</p></div>
-          </div>
-          <p className="mt-4 text-xs leading-5 text-slate-500"><strong className="font-semibold text-slate-700">Review context:</strong> 86% clear-pixel coverage. This is a reason to investigate—not proof of encroachment or permanent wetland loss.</p>
-        </div>
-      </div>
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
+      <div className="flex items-center justify-between"><div><h2 className="text-sm font-semibold text-slate-900">My expenses</h2><p className="mt-0.5 text-xs text-slate-400">On your tasks only</p></div><Link to="/expenses" aria-label="Open expenses" className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><ArrowRight size={16} /></Link></div>
+      <dl className="mt-4 divide-y divide-slate-100 text-xs">
+        <div className="flex justify-between gap-3 py-2.5"><dt className="text-slate-500">Approved</dt><dd className="font-semibold text-slate-900">{formatBdt(sumAmount(by('approved')))}</dd></div>
+        <div className="flex justify-between gap-3 py-2.5"><dt className="text-slate-500">Waiting for approval</dt><dd className="font-semibold text-slate-900">{formatBdt(sumAmount(by('pending')))}</dd></div>
+        <div className="flex justify-between gap-3 py-2.5"><dt className="text-slate-500">Rejected</dt><dd className="font-semibold text-slate-900">{by('rejected').length}</dd></div>
+      </dl>
     </section>
   )
 }
 
 export function DashboardPage() {
-  const { role, sites, tasks, meetings, teamMembers, budgetSummary } = useApp()
-  const [chartRange, setChartRange] = useState('7 days')
-  const [overviewRange, setOverviewRange] = useState('Last 30 days')
-  const [activities, setActivities] = useLocalStorage('terralink.dashboard.activities', dashboardActivities)
-  const [showAllActivity, setShowAllActivity] = useState(false)
-  const [lastUpdated, setLastUpdated] = useState('Just now')
+  const { role, can, scope, budgetSummary } = useApp()
+  const navigate = useNavigate()
+  const [accessOpen, setAccessOpen] = useState(false)
+  const view = VIEWS[role.id]
+  const access = ROLE_ACCESS[role.id]
 
-  const prioritySite = sites.find((site) => site.status === 'needs_review') ?? sites[0]
-  const needsReview = sites.filter((site) => site.status === 'needs_review').length
-  const view = roleViews[role.id]
-  const visibleSites = view.siteIds ? sites.filter((site) => view.siteIds.includes(site.id)) : sites
-  const visibleTasks = view.taskAssignee ? tasks.filter((task) => task.assignee === view.taskAssignee) : tasks
-  const memberId = teamMembers.find((member) => member.name === role.user.name)?.id
-  const visibleMeetings = useMemo(
-    () => role.id === 'coordinator' ? meetings.filter((meeting) => meeting.attendeeIds.includes(memberId)) : meetings,
-    [meetings, memberId, role.id],
+  const mapReports = useMemo(() => scope.communityReports.filter((report) => OPEN_REPORT_STATUSES.includes(report.status) && !report.resolved), [scope.communityReports])
+  const kpis = useMemo(() => buildKpis(role.id, { scope, budgetSummary }), [budgetSummary, role.id, scope])
+  const priorities = useMemo(
+    () => buildPriorities(role.id, { scope, siteName: (id) => scope.sites.find((site) => site.id === id)?.name }),
+    [role.id, scope],
   )
-  const kpis = useMemo(
-    () => buildKpis(role.id, needsReview, visibleSites, visibleTasks),
-    [role.id, needsReview, visibleSites, visibleTasks],
-  )
-
-  function refreshDashboard() {
-    setLastUpdated('Updated now')
-    window.setTimeout(() => setLastUpdated('Just now'), 1800)
-  }
 
   return (
     <div className="animate-fade-in space-y-6 pb-8">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-xs font-semibold text-brand-700">{formatToday()}</p>
           <h2 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-slate-950 sm:text-[28px]">{getGreeting()}, {role.user.name.split(' ')[0]}.</h2>
-          <p className="mt-1.5 text-sm text-slate-500">Here’s what needs attention in your {role.label.toLowerCase()} workspace.</p>
-          <div className="mt-3 max-w-2xl"><RoleScope role={role} view={view} /></div>
+          <p className="mt-1.5 text-sm text-slate-500">{role.label} workspace. {view.guidance}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="relative flex items-center">
-            <CalendarRange size={15} className="pointer-events-none absolute left-3 text-slate-400" />
-            <select value={overviewRange} onChange={(event) => setOverviewRange(event.target.value)} aria-label="Dashboard time period" className="h-10 rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-xs font-medium text-slate-600 outline-none hover:border-slate-300 focus:border-brand-400">
-              <option>Last 7 days</option><option>Last 30 days</option><option>Last 90 days</option>
-            </select>
-          </label>
-          <button type="button" onClick={refreshDashboard} title="Refresh dashboard" aria-label="Refresh dashboard" className="grid size-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-800"><RefreshCw size={16} /></button>
-        </div>
+        <button type="button" onClick={() => setAccessOpen(true)} className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-card transition hover:bg-slate-50 lg:self-auto">
+          <ShieldCheck size={15} className="text-brand-700" />
+          <span className="text-left leading-4"><span className="block">My role and access</span><span className="block text-[10px] font-normal text-slate-400">{access.headline}</span></span>
+        </button>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((metric) => <KpiCard key={metric.label} {...metric} />)}
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 shadow-card"><span>Showing {overviewRange.toLowerCase()} · {visibleSites.length} sample sites</span><span className="flex items-center gap-1.5 font-medium text-slate-600"><CircleCheck size={13} /> {lastUpdated}</span></div>
-
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(300px,0.75fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.9fr)_minmax(320px,0.9fr)]">
         <div className="space-y-6">
-          <PriorityObservation site={prioritySite} view={view} />
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(330px,0.85fr)]">
-            <MapPreview sites={visibleSites} />
-            <SiteSnapshot sites={visibleSites} />
-          </div>
-          <TaskList tasks={visibleTasks} title={view.taskTitle} subtitle={view.taskSubtitle} />
-          <MonitoringTrend data={trendData[chartRange]} range={chartRange} onRangeChange={setChartRange} />
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div><h2 className="text-sm font-semibold text-slate-900">{view.mapTitle}</h2><p className="mt-0.5 text-xs text-slate-400">{view.mapHint}</p></div>
+              <Link to="/map" className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">Open full map <ArrowRight size={14} className="text-slate-500" /></Link>
+            </div>
+            <WetlandMap
+              sites={scope.sites}
+              reports={mapReports}
+              selectedSite={null}
+              onSelectSite={(id) => navigate(`/sites/${id}`)}
+              onSelectReport={can('community.view') ? (id) => navigate(`/community?report=${id}`) : undefined}
+              className="h-[400px]"
+            />
+          </section>
+          {role.id === 'coordinator' && <SiteSnapshot sites={scope.sites} title="My sites" registerLink={null} />}
+          <TaskList tasks={scope.tasks} title={view.taskTitle} subtitle={view.taskSubtitle} />
         </div>
 
         <aside className="space-y-6">
-          <UpcomingSchedule meetings={visibleMeetings} tasks={visibleTasks} canSchedule={role.id !== 'coordinator'} />
-          <ActivityTimeline
-            activities={activities}
-            expanded={showAllActivity}
-            onToggle={() => setShowAllActivity((value) => !value)}
-            onMarkAll={() => setActivities((items) => items.map((item) => ({ ...item, unread: false })))}
-          />
-          <BudgetCard budget={budgetSummary} title={view.budgetTitle} subtitle={view.budgetSubtitle} />
-          <AssistantPrompt />
+          <PriorityList view={view} items={priorities} />
+          <UpcomingSchedule meetings={scope.meetings} tasks={scope.tasks} canSchedule={can('schedule.manage')} />
+          {role.id === 'coordinator' && <MyExpenses expenses={scope.expenses} />}
+          {can('budget.view') && <BudgetCard budget={budgetSummary} title={role.id === 'operator' ? 'Budget position' : 'Budget overview'} subtitle={role.id === 'operator' ? 'Read-only, approved costs' : 'Current programme budget'} />}
         </aside>
       </div>
+      <AccessPanel open={accessOpen} role={role} onClose={() => setAccessOpen(false)} />
     </div>
   )
 }

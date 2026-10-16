@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   Clock3,
   Download,
+  FileText,
   Mail,
   MapPin,
   MessageCircle,
@@ -15,13 +16,19 @@ import {
   UserRound,
   X,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TASK_STATUS, TASK_STATUS_ORDER } from '../../constants/status'
+import { can } from '../../constants/access'
+import { TASK_STATUS, isTaskClosed } from '../../constants/status'
 import { buildScheduleLink } from '../../utils/schedule'
+import { isTaskOverdue } from '../../utils/tasks'
 import { CommunicationHistory } from '../communications/CommunicationHistory'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
+import { CompletionReview } from './CompletionReview'
+import { TaskEvidence } from './TaskEvidence'
+import { TaskExpenses } from './TaskExpenses'
+import { TaskWorkflow } from './TaskWorkflow'
 
 const actionClass = 'flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-left text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-50'
 
@@ -43,31 +50,30 @@ function ActionLink({ icon: Icon, to, children }) {
   )
 }
 
-function allowedStatuses(role, task) {
-  if (role.id === 'manager') return TASK_STATUS_ORDER
-  if (role.id === 'coordinator' && task.assignee === role.user.name) {
-    return [...new Set([task.status, 'in_progress', 'reported_complete'])]
-  }
-  return [task.status]
-}
-
-export function TaskDetailDrawer({ task, role, members, logs = [], onClose, onUpdate, onAddComment, onAddToCalendar, onDownloadIcs, onEmailReminder, onWhatsAppReminder }) {
-  const [status, setStatus] = useState(task.status)
+export function TaskDetailDrawer({
+  task, report, expenses, role, members, logs = [],
+  onClose, onUpdate, onAddComment, onSetStatus, onSubmitCompletion, onReviewCompletion, onAddExpense, onReviewExpense,
+  onAddToCalendar, onDownloadIcs, onEmailReminder, onWhatsAppReminder,
+}) {
   const [assignee, setAssignee] = useState(task.assignee)
   const [dueDate, setDueDate] = useState(task.dueDate)
   const [estimatedCost, setEstimatedCost] = useState(String(task.estimatedCost))
-  const [actualCost, setActualCost] = useState(String(task.actualCost))
   const [notifications, setNotifications] = useState(task.notifications)
   const [comment, setComment] = useState('')
   const [saved, setSaved] = useState(false)
   const [sendingEmail, setSendingEmail] = useState(false)
-  const canManageRecord = role.id === 'manager' || role.id === 'operator'
-  const canAssign = role.id === 'manager'
-  const canUpdateProgress = role.id === 'manager' || (role.id === 'coordinator' && task.assignee === role.user.name)
-  const canComment = role.id !== 'coordinator' || task.assignee === role.user.name
-  const statusOptions = useMemo(() => allowedStatuses(role, task), [role, task])
-  const isOpen = task.status !== 'reported_complete'
-  const canUseCalendar = canManageRecord || task.assignee === role.user.name
+  const permitted = (permission) => can(role.id, permission)
+  const isManager = permitted('tasks.review')
+  const ownTask = role.id === 'coordinator' && task.assignee === role.user.name
+  // A coordinator can act only on their own tasks; the other roles act on any task their permissions allow.
+  const forThisTask = (permission) => permitted(permission) && (role.id !== 'coordinator' || ownTask)
+  const canAssign = permitted('tasks.assign')
+  const canRemind = permitted('tasks.remind')
+  const canComment = forThisTask('tasks.comment')
+  const closed = isTaskClosed(task)
+  const canAddExpense = !closed && forThisTask('expenses.add')
+  const canUseCalendar = canRemind || task.assignee === role.user.name
+  const overdue = isTaskOverdue(task)
 
   async function sendEmailReminder() {
     setSendingEmail(true)
@@ -89,7 +95,7 @@ export function TaskDetailDrawer({ task, role, members, logs = [], onClose, onUp
   function submitChanges(event) {
     event.preventDefault()
     const member = members.find((item) => item.name === assignee)
-    onUpdate({ status, assignee, initials: member.initials, dueDate, estimatedCost: Number(estimatedCost), actualCost: Number(actualCost), notifications })
+    onUpdate({ assignee, initials: member.initials, dueDate, estimatedCost: Number(estimatedCost), notifications })
     setSaved(true)
   }
 
@@ -100,52 +106,73 @@ export function TaskDetailDrawer({ task, role, members, logs = [], onClose, onUp
     setComment('')
   }
 
+  const status = TASK_STATUS[task.status]
   return (
     <div className="fixed inset-0 z-[1000] bg-slate-950/35 backdrop-blur-[1px]" role="dialog" aria-modal="true" aria-labelledby="task-drawer-title">
       <button type="button" className="absolute inset-0 cursor-default" onClick={onClose} aria-label="Close task details" />
-      <aside className="absolute inset-y-0 right-0 z-10 flex w-full max-w-xl flex-col overflow-hidden border-l border-slate-200 bg-white shadow-pop">
+      <aside className="absolute inset-y-0 right-0 z-10 flex w-full max-w-2xl flex-col overflow-hidden border-l border-slate-200 bg-white shadow-pop">
         <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4">
-          <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{task.id}</p><h2 id="task-drawer-title" className="mt-1 truncate text-lg font-semibold text-slate-900">{task.title}</h2><div className="mt-2 flex flex-wrap items-center gap-2"><Badge tone={TASK_STATUS[task.status].tone}>{TASK_STATUS[task.status].label}</Badge><span className="text-[10px] font-semibold text-slate-500">{task.priority} priority</span></div></div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{task.id}</p>
+            <h2 id="task-drawer-title" className="mt-1 text-lg font-semibold leading-6 text-slate-900">{task.title}</h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Badge tone={status.tone}>{status.label}</Badge>
+              {overdue && <Badge tone="amber">Overdue</Badge>}
+              <span className="text-[10px] font-semibold text-slate-500">{task.priority} priority</span>
+              <span className="text-[10px] text-slate-400">Due {task.due} · {task.assignee}</span>
+            </div>
+          </div>
           <button type="button" onClick={onClose} aria-label="Close task details" className="grid size-9 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"><X size={18} /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
           <p className="text-xs leading-5 text-slate-600">{task.description}</p>
-          <Link to={`/sites/${task.siteId}`} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><MapPin size={14} className="text-slate-500" />{task.site} site record</Link>
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link to={`/sites/${task.siteId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><MapPin size={14} className="text-slate-500" />{task.site} site record</Link>
+            {task.reportId && (permitted('community.view')
+              ? <Link to={`/community?report=${task.reportId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-700 hover:text-brand-900"><FileText size={14} className="text-slate-500" />Source report {task.reportId}</Link>
+              : <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500"><FileText size={14} />Source report {task.reportId}</span>)}
+          </div>
 
-          <form onSubmit={submitChanges} className="mt-5 space-y-4 border-t border-slate-100 pt-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block"><span className="text-xs font-semibold text-slate-700">Status</span><select value={status} disabled={!canUpdateProgress} onChange={(event) => { setStatus(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400">{statusOptions.map((id) => <option key={id} value={id}>{TASK_STATUS[id].label}</option>)}</select></label>
-              <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} disabled={!canAssign} onChange={(event) => { setAssignee(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400">{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select></label>
-              <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Deadline</span><input type="date" value={dueDate} disabled={!canManageRecord} onChange={(event) => { setDueDate(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400" /></label>
-              <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CircleDollarSign size={14} className="text-slate-500" />Estimated cost</span><input type="number" min="0" value={estimatedCost} disabled={!canManageRecord} onChange={(event) => { setEstimatedCost(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400" /></label>
-              <label className="block sm:col-span-2"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CircleDollarSign size={14} className="text-slate-500" />Actual cost</span><input type="number" min="0" value={actualCost} disabled={!canManageRecord && !canUpdateProgress} onChange={(event) => { setActualCost(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400" /></label>
-            </div>
+          <TaskWorkflow task={task} role={role} onSetStatus={onSetStatus} onSubmitCompletion={onSubmitCompletion} />
+          <TaskEvidence task={task} report={report} />
+          <CompletionReview task={task} isManager={isManager} onReview={onReviewCompletion} />
+          <TaskExpenses task={task} expenses={expenses} canAdd={canAddExpense} canReview={permitted('expenses.approve')} onAdd={onAddExpense} onReview={onReviewExpense} />
 
-            <fieldset className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
-              <legend className="px-1 text-[10px] font-semibold text-slate-600">Notification preferences</legend>
-              <div className="flex flex-wrap items-center gap-4 text-[10px] text-slate-500">
-                {[["email", "Email", Mail], ["calendar", "Calendar", CalendarDays], ["whatsapp", "WhatsApp", MessageCircle]].map(([id, label, Icon]) => (
-                  <label key={id} className="flex items-center gap-1.5"><input type="checkbox" checked={notifications[id]} disabled={!canManageRecord} onChange={() => { setNotifications((current) => ({ ...current, [id]: !current[id] })); setSaved(false) }} className="accent-slate-700" /><Icon size={12} className="text-slate-500" />{label}</label>
-                ))}
+          {canAssign && !closed && (
+            <form onSubmit={submitChanges} className="mt-6 space-y-4 border-t border-slate-100 pt-5">
+              <h3 className="text-xs font-semibold text-slate-800">Assignment and plan</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => { setAssignee(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none disabled:bg-slate-50 disabled:text-slate-400">{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select></label>
+                <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Deadline</span><input type="date" value={dueDate} onChange={(event) => { setDueDate(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none" /></label>
+                <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CircleDollarSign size={14} className="text-slate-500" />Estimated cost</span><input type="number" min="0" value={estimatedCost} onChange={(event) => { setEstimatedCost(event.target.value); setSaved(false) }} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none" /></label>
               </div>
-            </fieldset>
 
-            {saved && <p role="status" className="flex items-center gap-1.5 text-xs font-medium text-emerald-700"><Check size={14} className="text-slate-600" />Task changes saved.</p>}
-            {(canManageRecord || canUpdateProgress) && <Button type="submit" className="w-full">Save task changes <Check size={15} /></Button>}
-          </form>
+              <fieldset className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+                <legend className="px-1 text-[10px] font-semibold text-slate-600">Notification preferences</legend>
+                <div className="flex flex-wrap items-center gap-4 text-[10px] text-slate-500">
+                  {[['email', 'Email', Mail], ['calendar', 'Calendar', CalendarDays], ['whatsapp', 'WhatsApp', MessageCircle]].map(([id, label, Icon]) => (
+                    <label key={id} className="flex items-center gap-1.5"><input type="checkbox" checked={notifications[id]} onChange={() => { setNotifications((current) => ({ ...current, [id]: !current[id] })); setSaved(false) }} className="accent-slate-700" /><Icon size={12} className="text-slate-500" />{label}</label>
+                  ))}
+                </div>
+              </fieldset>
 
-          {(canUseCalendar || canManageRecord) && (
+              {saved && <p role="status" className="flex items-center gap-1.5 text-xs font-medium text-brand-700"><Check size={14} className="text-slate-600" />Changes saved.</p>}
+              <Button type="submit" className="w-full">Save assignment and plan <Check size={15} /></Button>
+            </form>
+          )}
+
+          {(canUseCalendar || canRemind) && !closed && (
             <section className="mt-6 border-t border-slate-100 pt-5">
               <h3 className="text-xs font-semibold text-slate-800">Follow-up actions</h3>
               <p className="mt-1 text-[11px] leading-5 text-slate-500">Put the deadline on a calendar, remind {task.assignee}, or plan the related field work.</p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {canUseCalendar && onAddToCalendar && <ActionButton icon={CalendarDays} onClick={onAddToCalendar}>Add deadline to Google Calendar</ActionButton>}
                 {canUseCalendar && onDownloadIcs && <ActionButton icon={Download} onClick={onDownloadIcs}>Download deadline .ics</ActionButton>}
-                {canManageRecord && onEmailReminder && <ActionButton icon={Mail} onClick={sendEmailReminder} disabled={sendingEmail || !isOpen}>{sendingEmail ? 'Sending reminder…' : 'Email reminder to assignee'}</ActionButton>}
-                {canManageRecord && onWhatsAppReminder && <ActionButton icon={MessageCircle} onClick={onWhatsAppReminder} disabled={!isOpen}>WhatsApp reminder</ActionButton>}
-                {canManageRecord && <ActionLink icon={CalendarPlus} to={buildScheduleLink({ new: 'field_visit', site: task.siteId, task: task.id, title: `${task.site} field visit · ${task.id}` })}>Schedule field visit</ActionLink>}
-                {canManageRecord && <ActionLink icon={ReceiptText} to={`/expenses?new=1&task=${task.id}`}>Record an expense</ActionLink>}
+                {canRemind && onEmailReminder && <ActionButton icon={Mail} onClick={sendEmailReminder} disabled={sendingEmail}>{sendingEmail ? 'Sending reminder…' : 'Email reminder to assignee'}</ActionButton>}
+                {canRemind && onWhatsAppReminder && <ActionButton icon={MessageCircle} onClick={onWhatsAppReminder}>WhatsApp reminder</ActionButton>}
+                {permitted('schedule.manage') && <ActionLink icon={CalendarPlus} to={buildScheduleLink({ new: 'field_visit', site: task.siteId, task: task.id, title: `${task.site} field visit · ${task.id}` })}>Schedule field visit</ActionLink>}
+                {permitted('expenses.view') && <ActionLink icon={ReceiptText} to="/expenses">Open expense ledger</ActionLink>}
               </div>
             </section>
           )}

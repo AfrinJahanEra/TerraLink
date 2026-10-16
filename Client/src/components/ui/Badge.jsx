@@ -4,11 +4,14 @@ import { cn } from '../../utils/cn'
 const dots = {
   brand: 'bg-brand-600',
   amber: 'bg-amber-500',
-  emerald: 'bg-emerald-500',
+  emerald: 'bg-brand-700',
   rose: 'bg-rose-500',
   violet: 'bg-slate-400',
-  sky: 'bg-sky-500',
+  sky: 'bg-brand-400',
   slate: null,
+  neutral: 'bg-slate-400',
+  brandSoft: 'bg-brand-400',
+  brandDeep: 'bg-brand-800',
 }
 
 export function Badge({ tone = 'slate', children, className }) {

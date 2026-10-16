@@ -2,7 +2,7 @@ import { cn } from '../../utils/cn'
 
 const valueTones = {
   default: 'text-slate-800',
-  rose: 'text-rose-700',
+  rose: 'text-amber-700',
   amber: 'text-slate-800',
   emerald: 'text-slate-800',
 }

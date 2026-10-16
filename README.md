@@ -1,8 +1,8 @@
 # TerraLink
 
-**A wetland monitoring and response workspace for NGO project teams in Bangladesh.**
+**A wetland monitoring and response workspace for NGO project teams and communities in Bangladesh.**
 
-TerraLink turns a possible change in a wetland, seen from satellite imagery, into a documented, accountable and costed field response. Review, task assignment, scheduling, expenses, communication and reporting all happen in one ERP-style workspace instead of across spreadsheets, chat groups and email threads.
+TerraLink turns a possible change in a wetland, seen from satellite imagery or reported by a resident with a photo, into a documented, accountable and costed field response. Review, task assignment, scheduling, expenses, communication and reporting all happen in one ERP-style workspace instead of across spreadsheets, chat groups and email threads.
 
 | | |
 |---|---|
@@ -43,6 +43,10 @@ Core ideas:
 - **Every decision becomes accountable work.** Confirmed findings become field tasks with an assignee, priority, due date, estimated cost and activity history.
 - **Costs stay linked.** Each expense is tied to a task and a site, and rolls up into site budgets and programme totals. Over-budget situations are flagged straight away.
 - **Integrations sit where the work happens.** Calendar events, email notices and WhatsApp messages are actions inside tasks, meetings, budgets and reports. They are not a separate page.
+- **Residents can report what they see.** Anyone can explore the public map. To send a photo report for a real Dhaka water body, a person signs in with the **User** role, so every report is tied to an account. Reports start as Pending and a manager verifies or rejects each one with a recorded reason.
+- **Real outlines on real imagery.** Five Dhaka water bodies are drawn from their OpenStreetMap shorelines on satellite imagery.
+- **Measured change, not invented change.** Pick a water body and two dates. TerraLink finds real Sentinel-2 scenes, measures the water inside the outline on each date, and reports the difference with its uncertainty, or says plainly that the data does not support a measurement.
+- **Verified outcome.** A verified report becomes an assigned task with a deadline, costs that need approval, completion photos, and a manager's decision on whether the problem was resolved.
 - **Bangla-first assistance.** A Bangla assistant answers operational questions, such as which tasks are pending or overdue, using only the records visible in the workspace.
 - **Reports from live state.** A printable A4 report is generated from the current workspace, including evidence, decisions, tasks, cost variance, limitations and sources.
 
@@ -51,9 +55,10 @@ Core ideas:
 | User | Need |
 |---|---|
 | **Project managers** at environmental NGOs | Review findings, approve work, control budgets, brief stakeholders |
-| **Field coordinators** | See only their assigned sites and tasks, add evidence, record field costs |
-| **Office operators** | Maintain task, team and expense records, prepare reports |
+| **Field coordinators** | See only their own tasks and the sites they are at, start work, submit completion photos, record field costs |
+| **Office operators** | Keep records complete: receipts, reports, schedules and team details. They see everything but do not decide, assign or approve |
 | **Programme leads and donors** | Receive clear, sourced and honest progress reports |
+| **Users** (residents and community members) | Explore the monitored water bodies, report a problem with a photo and a map pin, and follow the review status of their own reports |
 
 ## 4. End-to-End Workflow
 
@@ -61,7 +66,7 @@ Core ideas:
  Satellite comparison          Manager review             Field operations
  ────────────────────          ──────────────             ────────────────
  Site flagged as          ──►  Review queue        ──►    Task created and assigned
- "Needs review"                Change analysis            Field visit scheduled
+ "Needs review"                Site review                 Field visit scheduled
                                Documented decision        Calendar / email / WhatsApp
                                                                  │
                                                                  ▼
@@ -72,8 +77,8 @@ Core ideas:
  Briefing scheduled            Over-budget warning
 ```
 
-1. A monitored site shows a possible reduction in visible water area and is marked **Needs review**.
-2. The manager opens the **Change analysis** page, compares before and after imagery, and records a decision with a reason.
+1. A monitored site is marked **Needs review**, or a resident sends a photo report that a manager checks and verifies.
+2. The manager opens the **Site review** page, compares the annual satellite composites, and records a decision with a reason.
 3. A **field verification task** is created and assigned. A field visit is scheduled and the assignee is notified.
 4. The field coordinator updates progress, adds notes and evidence, and records **actual costs**.
 5. Expenses update the **site budget** and **programme totals**. Overspending is highlighted and a budget review can be scheduled.
@@ -88,22 +93,24 @@ The navigation is organised like an ERP, with each area of work in its own modul
 
 | Module | Description |
 |---|---|
-| **Dashboard** | Role-aware summary: KPIs, the current priority site, monitoring snapshot, open tasks, upcoming schedule (14-day lookahead), activity trends, budget health and an assistant prompt. Coordinators see only their own work and meetings. |
+| **Dashboard** | Role-aware summary: KPIs, a map of the sites, the items that need a decision, open tasks, the upcoming schedule (14-day lookahead) and budget health. Coordinators see only their own work and meetings. |
 
 ### Monitoring
 
 | Module | Description |
 |---|---|
-| **Wetland map** | Interactive map of all monitored sites with status filters, a searchable site directory, and switchable street and satellite imagery layers. |
-| **Sites register** | Tabular register of every site with location, area, change percentage, status, open tasks and linked budget figures. |
-| **Change analysis** | Side-by-side before and after satellite comparison with selectable periods, synchronised pan and zoom, analysis summary (earlier area, later area, change, clear-pixel coverage) and the manager decision panel. |
+| **Wetland map** | Satellite map of the five monitored Dhaka water bodies, drawn as polygons from their mapped outlines, with status filters, a searchable directory, community report markers, and a street layer. |
+| **Sites register** | Tabular register of every site with location, mapped area, open community reports, status, open tasks and linked budget figures. |
+| **Community reports** | Review queue for photo reports from residents. Each report shows its photos, location, dates and review history, and a manager can start review, verify, or reject with a reason, then create a field task from a verified report. |
+| **Satellite comparison** | Choose a water body and two dates. TerraLink picks the clearest Sentinel-2 scene near each date, draws both over the same extent with a swipe or side-by-side view, shows the water mask and mapped outline, and reports measured water area per date, the change, a verdict and the data quality. A manager or operator can save the result to the site record. |
+| **Site review** | The saved measurement (or an honest "not yet measured"), the observation record and the manager decision panel. |
 | **Review queue** | Observations awaiting a documented decision, sites with data-quality gaps (for example heavy cloud cover), and the register of recorded decisions. |
 
 ### Field Operations
 
 | Module | Description |
 |---|---|
-| **Tasks** | Board and list views with filters, a task detail drawer, comments, activity history and status workflow (Review pending, Approved, In progress, Reported complete). Follow-up actions are available from each task: add the deadline to Google Calendar, download an .ics file, send an email or WhatsApp reminder, schedule a field visit, or record an expense. |
+| **Tasks** | Board and list of assigned work. A task can come from a verified community report and keeps the link. Stages: Open, In progress, Blocked (reason required), Awaiting verification, Completed and Cancelled (reason required); overdue is a flag, not a stage. The task drawer shows the original report photo beside the completion photos, approved and pending costs against the estimate, and the manager's review. Follow-up actions: calendar deadline, .ics, email or WhatsApp reminder, field visit. |
 | **Schedule and meetings** | Month calendar and agenda views of meetings and task deadlines. Supports field visits, review meetings, report briefings, budget reviews and team syncs, with attendees, agenda, calendar sync and invitations. |
 
 ### Finance
@@ -111,7 +118,7 @@ The navigation is organised like an ERP, with each area of work in its own modul
 | Module | Description |
 |---|---|
 | **Budgets** | Planned allocation, actual cost, remaining and committed amounts per site or per task. Includes over-budget alerts, allocation editing for managers, and a one-click "Schedule budget review" action. |
-| **Expenses** | Expense ledger linked to tasks and sites, with filtering, totals and a guided form for new records. |
+| **Expenses** | Ledger of costs by category with an optional receipt photo. An expense counts toward the task and site cost only after the project manager approves it; a rejected one needs a reason. |
 
 ### People
 
@@ -126,6 +133,17 @@ The navigation is organised like an ERP, with each area of work in its own modul
 | **Reports** | Generates an A4 report for a chosen site and date range: cover, observation evidence, decision, task table, cost variance, limitations, sources and sample-data disclaimer. Supports print or save as PDF, sharing by email with a cover note, and scheduling a report briefing. |
 | **Bangla assistant** | Guided question-and-answer in Bangla, calculated from the current workspace state, with source chips that show which records were used. When information is not available it answers clearly instead of guessing. |
 
+### Community pages (open to everyone, reporting needs a User)
+
+The user header is deliberately minimal: the logo returns to the map, and a signed-in user has My reports and Sign out. Reporting is reached from the buttons on the map and report pages. The public map uses three calm states (stable, needs attention, not enough data) in the theme's teal and grey with one amber, instead of six status colours.
+
+| Page | Description |
+|---|---|
+| **Monitoring map** (`/explore`) | One-screen satellite map with a side list in two tabs, water bodies and reports. Header tiles show water bodies, open, verified and resolved reports. Users also see a shortcut to their own reports. |
+| **Water body page** (`/explore/:id`) | Outline on satellite imagery, key facts, the saved measurement if there is one, and the community reports for that water body. |
+| **Report a problem** (`/report`) | User-only form laid out as numbered cards: photo evidence, what happened, and a large location map with a water-body selector and a live pin readout. Includes a short guide and the user's recent reports. |
+| **My reports** (`/my-reports`) | Counts by status, filters, a progress tracker for each report (Submitted, Under review, Verified, Action taken, Resolved), the reviewer's reasons, and the action taken. |
+
 ### Administration
 
 | Module | Description |
@@ -136,25 +154,60 @@ The navigation is organised like an ERP, with each area of work in its own modul
 
 ## 6. Roles and Permissions
 
-The prototype has three roles. You can switch roles at any time from the top bar to see how access changes.
+The prototype has three staff roles and a **User** role for the community. There is no role switcher: to use a different role, sign out and sign in again (the account menu says so). The sign-in and register screens show what the chosen role can do, fill in demo details for it, validate the fields, and keep a `next` link so a visitor returns to the page they came from. The User role has no staff workspace and lands on the community pages.
 
-| Capability | Project Manager | Field Coordinator | Office Operator |
+Each role sees only what it needs, and can do only what it is responsible for. The rules live in one table (`Client/src/constants/access.js`). The sidebar, the route guard, the data each page receives, every button, and the state functions all read from it, so the app does not merely hide a button: the action is refused too. A page outside your role shows a "not part of your role" notice and a link to what you can open, and **My role and access** (account menu or dashboard) lists what you can and cannot do.
+
+**What each role is for**
+
+| | Project Manager | Field Coordinator | Office Operator |
+|---|---|---|---|
+| Purpose | Decides, assigns and approves | Does the field work on assigned tasks | Keeps the records and the paperwork |
+| Sees | The whole programme | Only their own tasks, the sites those tasks are at, their schedule and their expenses | The whole programme, read-only on decisions |
+
+**Pages** (a page a role does not have is absent from its sidebar and blocked if opened by URL)
+
+| Page | Project Manager | Field Coordinator | Office Operator |
 |---|:---:|:---:|:---:|
-| View dashboard, map, sites and change analysis | Yes | Yes | Yes |
-| Record review decisions | Yes | No | No |
-| Create tasks | Yes | No | Yes |
-| Reassign tasks | Yes | No | No |
-| Update task progress | Yes | Own tasks | No |
-| Add comments and evidence | Yes | Own tasks | Yes |
-| Schedule meetings and field visits | Yes | No | Yes |
-| Manage team records | Yes | No | Yes |
-| Record expenses | Yes | Own tasks | Yes |
-| Edit budget allocations | Yes | No | No |
-| Generate and share reports | Yes | Yes | Yes |
-| Communications log and audit trail | Yes | No | Yes |
+| Dashboard | Yes | Yes (my work) | Yes (records) |
+| Wetland map | Yes | My sites only | Yes |
+| Sites register, Site review | Yes | No (read-only record of a site they have a task at) | Yes, read-only |
+| Satellite comparison | Yes | No | Yes |
+| Community reports, Review queue | Yes | No | Yes, read-only |
+| Tasks | All | Own only | All, read-only |
+| Schedule and meetings | All | Own only | All |
+| Budgets | Yes | No | Yes, read-only |
+| Expenses | All | Own tasks only | All |
+| Team | Yes | No | Yes |
+| Reports | Yes | No | Yes |
+| Bangla assistant | Yes | Own tasks, no budget figures | Yes |
+| Communications, Audit trail | Yes | No | Yes |
 | Settings | Yes | No | No |
 
-Sample users: Nusrat Jahan (Project Manager), Rahim Uddin (Field Coordinator), Sadia Akter (Office Operator).
+**Actions**
+
+| Action | Project Manager | Field Coordinator | Office Operator |
+|---|:---:|:---:|:---:|
+| Record a review decision for a site | Yes | No | No |
+| Verify or reject a community report | Yes | No | No |
+| Run a satellite comparison, save a measurement | Yes | No | Yes |
+| Create a task, assign or reassign it, change its deadline or estimate | Yes | No | No |
+| Start, block or submit completion evidence on a task | Yes | Own tasks | No |
+| Approve completion and close a task, or send it back | Yes | No | No |
+| Cancel or reopen a task | Yes | No | No |
+| Add a note to a task | Yes | Own tasks | Yes |
+| Send a reminder (email or WhatsApp) | Yes | No | Yes |
+| Record an expense (pending until approved) | Yes, approved on entry | Own tasks | Yes |
+| Approve or reject an expense | Yes | No | No |
+| Edit a budget allocation | Yes | No | No |
+| Schedule meetings and field visits | Yes | No | Yes |
+| Manage team records | Yes | No | Yes |
+| Generate and share a programme report | Yes | No | Yes |
+| Change settings, integrations, reset the workspace | Yes | No | No |
+
+Sample users: Nusrat Jahan (Project Manager), Rahim Uddin (Field Coordinator), Sadia Akter (Office Operator), Karim Hossain (User).
+
+**The User role.** The map pages (`/explore` and `/explore/:siteId`) are open to everyone. `/report` and `/my-reports` need a signed-in User: a visitor who is signed out is sent to log in or register as a User and returns to the form afterwards, and staff roles see an explanation instead of the form, because staff review reports and do not submit them. Users cannot open any staff page; those routes send them to the community map. A report stores the reporter's name and email from the account. Reviewers see them; the public map shows only "Reporter".
 
 ## 7. Contextual Integrations
 
@@ -164,7 +217,7 @@ Integrations appear as actions at the point of need, not as a standalone page.
 |---|---|---|
 | Task drawer | Add deadline to calendar, download .ics, email reminder, WhatsApp reminder | Google Calendar, EmailJS, WhatsApp click-to-chat |
 | Task creation | Notify assignee by email, calendar and WhatsApp | EmailJS, Google Calendar, WhatsApp |
-| Change analysis | Schedule a field verification visit | Schedule module and Google Calendar |
+| Site review | Schedule a field verification visit | Schedule module and Google Calendar |
 | Schedule | Create meetings, sync to calendar, send invitations | Google Calendar, EmailJS, .ics |
 | Budgets | Over-budget notice to the manager, schedule a budget review | EmailJS, Schedule module |
 | Reports | Share by email with a cover note, schedule a briefing | EmailJS, Schedule module |
@@ -182,14 +235,19 @@ TerraLink is open about what is real and what is illustrative.
 
 | Component | Status |
 |---|---|
-| Street basemap (OpenStreetMap) | Real |
 | Satellite basemap (Esri World Imagery) | Real |
-| Sentinel-2 cloudless yearly mosaics (EOX) in change analysis | Real imagery |
+| Street basemap (OpenStreetMap) | Real |
+| Water-body outlines (OpenStreetMap way and relation geometry) | Real, community-mapped and unverified |
+| Mapped area (calculated from the outline) | Real calculation |
+| Dated Sentinel-2 L2A scenes, read from the public archive in the browser | Real imagery |
+| Water area measured by NDWI in a satellite comparison | Real measurement, an estimate with stated uncertainty |
+| Photo evidence and community reports you submit | Real, stored in this browser only |
 | Email delivery (EmailJS) | Real, when configured |
 | Google Calendar events | Real, when configured |
 | WhatsApp messages | Real click-to-chat, sent by the user |
-| Site list, area figures and change percentages | Sample data |
-| Dashboard site thumbnails | Illustrative visuals |
+| Water-area change | Real only where a comparison has been run and saved |
+| Site classifications (for example "No change") | Sample data |
+| Three seeded community reports | Sample data, without photos |
 | Team members, tasks, budgets and expenses | Sample data |
 | Bangla assistant | Simulated, rule-based over workspace records |
 | Authentication | Demo role selection, no real accounts |
@@ -205,6 +263,7 @@ All sample content is labelled **Sample** in the interface. A prototype banner i
 | Styling | Tailwind CSS 4 with a custom design theme |
 | Routing | React Router 7 (lazy-loaded routes, URL-driven drawers and forms) |
 | Maps | Leaflet with React Leaflet |
+| Satellite analysis | Earth Search STAC catalogue, geotiff.js (Cloud Optimized GeoTIFF range reads), proj4 (UTM projection); no backend |
 | Charts | Recharts and lightweight SVG charts |
 | Icons | Lucide (monochrome) |
 | Email | EmailJS browser SDK |
@@ -238,6 +297,19 @@ TerraLink is a frontend-only application. There is no backend server in this pro
 - Dates and schedules use the Asia/Dhaka time zone.
 - Currency is shown in Bangladeshi Taka, with Bangla numeral formatting where helpful.
 
+### Measuring water area
+
+The comparison runs in the browser; there is no backend.
+
+1. **Find scenes.** The Earth Search STAC catalogue lists Sentinel-2 L2A scenes whose footprint fully covers the outline within the chosen window (7 to 60 days). Clear scenes (scene cloud cover of 20% or less) are preferred, then the one closest to the requested date. The real acquisition date and scene ID are shown.
+2. **Read pixels.** Only the window around the water body is downloaded from the Cloud Optimized GeoTIFFs (bands B03 green, B08 near-infrared, the scene classification and true colour), using HTTP range requests.
+3. **Classify water.** A pixel inside the outline, plus a 10 m tolerance for geolocation error, is water when NDWI = (Green - NIR) / (Green + NIR) is above 0. Cloud, shadow, no-data, cirrus and snow pixels are left out. The reflectance offset that some scenes carry is detected from the data, because the catalogue flag is unreliable.
+4. **Cross-check.** ESA's own scene classification gives an independent water area for the same pixels. If the two disagree by more than a quarter, the image is marked Limited.
+5. **Report the difference.** Change = later - earlier, percent = change / earlier x 100 (unavailable when the earlier area is zero). The uncertainty is half the area of water pixels that touch non-water pixels. A difference inside the combined uncertainty is reported as "No measurable change" instead of a decrease or increase.
+6. **Decline when the data cannot support it.** Under one hectare, no usable scene, an unusable image, or dates that are more than 45 days apart in the seasonal cycle are reported as not reliable or flagged as indicative.
+
+Results are cached in the browser, so a repeated comparison takes seconds. The first run for a pair takes about half a minute on a typical connection. This is a screening measurement from 10 m pixels, not a survey, and it cannot see floating plants, very turbid water, or the cause of any change.
+
 ## 11. Project Structure
 
 ```
@@ -252,27 +324,30 @@ Prototype/
     │   └── DEMO_SCRIPT.md
     ├── public/
     └── src/
-        ├── assets/            Illustrative site imagery
+        ├── assets/            Landing page imagery
         ├── components/
         │   ├── brand/         Logo
+        │   ├── community/     Report form, location picker, report cards and detail
         │   ├── budget/        Allocation and expense forms, planned vs actual chart
         │   ├── communications/ Communication history
         │   ├── dashboard/     KPI cards, snapshots, schedule, insights
         │   ├── integrations/  Service cards, notification log
-        │   ├── layout/        Sidebar, top bar, banner, about panel
-        │   ├── map/           Wetland map and site panel
+        │   ├── layout/        Sidebar, top bar, banner, about panel, public layout
+        │   ├── login/         Landing and sign-in visuals
+        │   ├── map/           Wetland map, site panel, shared map explorer
         │   ├── reports/       Report preview and share modal
         │   ├── schedule/      Calendar, agenda, meeting forms
-        │   ├── site/          Image comparison, analysis, decision panel
-        │   ├── tasks/         Task board, cards, detail drawer
+        │   ├── compare/       Comparison viewer, measured-area summary, data-quality panel
+        │   ├── site/          Measured comparison card, decision panel
+        │   ├── tasks/         Task board, cards, detail drawer, workflow, evidence, expenses, completion review
         │   ├── team/          Member cards and forms
         │   └── ui/            Button, Badge, PageHeader, SummaryStrip, Toast
         ├── constants/         Navigation, roles, status definitions
         ├── context/           Application state and reducer
-        ├── data/              Sample sites, tasks, team, budgets, expenses
+        ├── data/              Water-body outlines, sample sites, tasks, team, budgets, expenses, sample reports
         ├── hooks/             useApp, useNotice, useClickOutside, useLocalStorage
         ├── pages/             One page per module
-        ├── services/          Email, calendar and WhatsApp services
+        ├── services/          Email, calendar, WhatsApp, photo storage, Sentinel-2 analysis and observation cache
         └── utils/             Formatting, schedule, audit, communications helpers
 ```
 
@@ -353,48 +428,53 @@ The project deploys to Vercel as a static single-page application.
 A timed 5 to 7 minute walkthrough is available in [`Client/docs/DEMO_SCRIPT.md`](Client/docs/DEMO_SCRIPT.md). Recommended path:
 
 1. **Dashboard:** priority site, KPIs and upcoming schedule.
-2. **Wetland map:** filter by Needs review and open Pond A.
-3. **Change analysis:** compare periods and record a decision.
-4. **Tasks:** create and assign a verification task, then send notifications.
-5. **Schedule:** schedule the field visit and sync it to the calendar.
-6. **Role switch:** act as Field Coordinator, update the task and add evidence.
-7. **Expenses and Budgets:** record a cost and show the over-budget warning.
+2. **Public explorer and report form:** open `/explore` while signed out, select Dhanmondi Lake, choose **Report a problem here**, sign in as a User, then submit a photo report and follow it under **My reports**.
+3. **Community reports:** sign in as Project Manager, check the evidence and verify the report.
+4. **Satellite comparison:** pick a water body and two dates, read the measured water area and its uncertainty, and save it to the site record.
+5. **Tasks:** from the verified report, create a task, assign it, and set the estimated cost.
+6. **Sign out and sign in as Field Coordinator:** start the work, add an expense (it stays pending), and submit completion photos.
+7. **Verification and cost:** as Project Manager, approve the expense, send the work back once, then approve it with the outcome Resolved. Show the before and after photos and the report marked Resolved.
 8. **Bangla assistant:** ask "কোন কাজ বাকি?" and "কোন task overdue?".
 9. **Reports:** generate, print and share the report.
 10. **Communications and Audit trail:** show the full record of actions.
 
-Edge cases worth showing: Wetland C (insufficient data because of cloud cover), Pond B and Lake D (no change), and a reduced budget allocation (over-budget state).
+Edge cases worth showing: Gol Talab (insufficient data because it is under one hectare), a report pinned outside every outline (saved as a location-based report), a rejected report (hidden from the public map, kept in the audit trail), and a reduced budget allocation (over-budget state).
 
 ## 16. Design Principles
 
 - **Professional and calm:** light interface, restrained shadows and a deep green navigation rail.
+- **One accent colour on the community side:** teal for actions and progress, slate for everything else, amber only for "needs attention".
 - **Colour carries meaning:** status is shown with small indicator dots on neutral labels. Red is kept for real problems such as overspending and failures.
 - **Monochrome iconography:** consistent neutral icons, no decorative imagery and no emoji.
-- **Honest data labelling:** every illustrative value is marked as sample data.
+- **Honest data labelling:** sample values are marked as sample data, and a figure that has not been measured is shown as "Not yet measured".
 - **Responsive:** built for laptops and tablets, with a collapsible sidebar that adapts to screen height.
 - **Accessible:** semantic headings, labelled controls, keyboard focus states and reduced-motion support.
 - **Bilingual:** English interface with Bangla assistance and Bangla currency formatting.
+- **Usable on a phone:** the public report form and map work at phone width, because residents report from the field.
 
 ## 17. Responsible Use and Limitations
 
-- A detected change in visible water area is **a reason to investigate**. It is not proof of encroachment, ecological loss or legal non-compliance. Field verification and human judgement are always required.
-- Optical satellite imagery is affected by cloud, shadow, seasonal water levels and resolution limits. TerraLink shows clear-pixel coverage and marks low-quality comparisons as Insufficient data.
-- Site measurements, tasks, budgets and team records in this prototype are **sample data**.
-- Data is stored in the user's browser only. Clearing browser storage or using Reset in Settings restores the original sample workspace.
+- A change seen in imagery, or a photo from a resident, is **a reason to investigate**. It is not proof of encroachment, ecological loss or legal non-compliance. Field verification and human judgement are always required.
+- Optical satellite imagery is affected by cloud, shadow, seasonal water levels and resolution limits. TerraLink picks the clearest scene, leaves cloud and shadow pixels out, and reports how many usable pixels there were. A water body under one hectare, or a comparison whose dates are far apart in the seasonal cycle, is reported as not reliable.
+- Site classifications, tasks, budgets and team records in this prototype are **sample data**.
+- Data is stored in the user's browser only. Photos are kept in the browser's IndexedDB and reports in local storage. Clearing browser storage or using Reset in Settings restores the original sample workspace and removes uploaded photos. Reports are not shared between devices.
+- Water-body outlines come from OpenStreetMap contributors and are simplified. They are not an official survey, so each boundary is marked unverified.
+- A water body under about one hectare is only a few 10 m satellite pixels wide. TerraLink marks such sites (Gol Talab) as Insufficient data and points to field evidence instead.
+- A verified community report means its evidence was reviewed. It does not by itself establish the condition of the whole water body.
 - The Bangla assistant is rule-based and answers only from workspace records. It is not a general-purpose language model.
 
 ## 18. Roadmap
 
 | Phase | Planned capability |
 |---|---|
-| Data | Automated water-index analysis (for example NDWI or MNDWI) from Sentinel-2 to flag sites by threshold |
-| Platform | Backend API, database, real authentication and organisation accounts |
-| Field | Offline-capable mobile capture with geotagged photos |
+| Data | Validate the NDWI measurement against surveyed boundaries and add MNDWI, multi-year trends and scheduled monitoring |
+| Platform | Backend API and shared database so reports sync across devices, object storage for photos, real authentication and organisation accounts |
+| Field | Offline-capable mobile capture, photo EXIF location checks and duplicate-report detection |
 | Messaging | WhatsApp Business Cloud API with consent management |
 | Intelligence | Bangla language model assistant grounded on workspace records |
 | Finance | Approval workflows, receipts and donor-specific budget lines |
 | Reporting | Scheduled reports, donor templates and data export |
-| Collaboration | Community reporting channel and multi-organisation sharing |
+| Collaboration | Reporter follow-up by SMS or WhatsApp, and multi-organisation sharing |
 
 ## 19. Team
 
@@ -408,8 +488,8 @@ Institution: Islamic University of Technology (IUT), Bangladesh.
 
 ## 20. Acknowledgements and Data Attribution
 
-- **Sentinel-2 cloudless** mosaics by [EOX IT Services GmbH](https://maps.eox.at/), containing modified Copernicus Sentinel data.
-- **Basemap** data from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
+- **Sentinel-2 L2A** scenes: contains modified Copernicus Sentinel data, served by the [Earth Search](https://element84.com/earth-search/) catalogue and AWS Open Data.
+- **Basemap** data and **water-body outlines** from [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the ODbL.
 - **World Imagery** by Esri and its data providers.
 - **Icons** by [Lucide](https://lucide.dev/).
 - **Fonts** IBM Plex Sans and Hind Siliguri via Google Fonts.

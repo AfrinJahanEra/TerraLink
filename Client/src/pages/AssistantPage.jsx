@@ -20,8 +20,9 @@ function createMessageId(prefix) {
 }
 
 export function AssistantPage() {
-  const { sites, tasks, decisions, expenses, siteBudgets } = useApp()
-  const [siteId, setSiteId] = useState('pond-a')
+  const { can, scope, decisions, siteBudgets } = useApp()
+  const { sites, tasks, expenses, communityReports } = scope
+  const [siteId, setSiteId] = useState('gulshan-baridhara-lake')
   const [messages, setMessages] = useState([welcome])
   const [input, setInput] = useState('')
   const [typing, setTyping] = useState(false)
@@ -49,6 +50,8 @@ export function AssistantPage() {
         expenses,
         siteBudgets,
         decision: decisions[selectedSite.id],
+        communityReports,
+        showBudget: can('budget.view'),
       })
       setMessages((current) => [...current, { id: createMessageId('assistant'), role: 'assistant', ...answer }])
       setTyping(false)

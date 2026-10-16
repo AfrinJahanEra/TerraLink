@@ -1,18 +1,19 @@
-import { TASK_STATUS, TASK_STATUS_ORDER } from '../../constants/status'
+import { BOARD_STATUSES, TASK_STATUS } from '../../constants/status'
 import { TaskCard } from './TaskCard'
 
 const columnStyles = {
-  review_pending: 'border-t-amber-400',
-  approved: 'border-t-sky-400',
+  open: 'border-t-slate-300',
   in_progress: 'border-t-brand-500',
-  reported_complete: 'border-t-emerald-500',
+  blocked: 'border-t-amber-400',
+  awaiting_verification: 'border-t-brand-300',
+  completed: 'border-t-brand-800',
 }
 
 export function TaskBoard({ tasks, onOpenTask }) {
   return (
     <div className="overflow-x-auto pb-2">
-      <div className="grid min-w-[1040px] grid-cols-4 gap-4">
-        {TASK_STATUS_ORDER.map((statusId) => {
+      <div className="grid min-w-[1020px] grid-cols-5 gap-3">
+        {BOARD_STATUSES.map((statusId) => {
           const columnTasks = tasks.filter((task) => task.status === statusId)
           return (
             <section key={statusId} className={`min-h-[420px] rounded-xl border border-t-2 border-slate-200 bg-slate-50/70 ${columnStyles[statusId]}`}>

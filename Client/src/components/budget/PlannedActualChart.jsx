@@ -26,8 +26,8 @@ export function PlannedActualChart({ rows }) {
             <Tooltip content={<BudgetTooltip />} cursor={{ fill: '#f8fafc' }} />
             <Legend wrapperStyle={{ fontSize: 11, color: '#64748b' }} />
             <Bar dataKey="planned" name="Planned" fill="#94a3b8" radius={[4, 4, 0, 0]} maxBarSize={30} />
-            <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]} maxBarSize={30}>
-              {data.map((row) => <Cell key={row.id} fill={row.overBudget ? '#e11d48' : '#20787d'} />)}
+            <Bar dataKey="actual" name="Actual" fill="#20787d" radius={[4, 4, 0, 0]} maxBarSize={30}>
+              {data.map((row) => <Cell key={row.id} fill={row.overBudget ? '#b45309' : '#20787d'} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>

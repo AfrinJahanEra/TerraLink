@@ -131,11 +131,11 @@ function Satellite({ radius, speed, offset = 0, reverse = false, size = 1, instr
   const beamMaterial = useRef()
   const beamLength = radius - EARTH_RADIUS + 0.02
   useFrame((state) => {
-    if (!pivot.current) return
+    if (!pivot.current || !MOTION_OK) return
     const t = state.clock.getElapsedTime()
     pivot.current.rotation.y = offset + t * speed * (reverse ? -1 : 1)
     pivot.current.rotation.x = 0.32 + Math.sin(t * 0.4) * 0.03
-    if (instrumented && MOTION_OK) {
+    if (instrumented) {
       if (beamMaterial.current) beamMaterial.current.dashOffset = -t * 0.6
       ;[pulseA, pulseB].forEach((pulse, index) => {
         if (pulse.current) pulse.current.position.x = -(((t * 0.5 + index * 0.5) % 1) * beamLength)
@@ -145,7 +145,7 @@ function Satellite({ radius, speed, offset = 0, reverse = false, size = 1, instr
   return (
     <group ref={pivot} rotation={[0.32, offset, 0]}>
       <group position={[radius, 0, 0]}>
-        <Float speed={2.2} rotationIntensity={0.3} floatIntensity={0.7}>
+        <Float speed={MOTION_OK ? 2.2 : 0} rotationIntensity={MOTION_OK ? 0.3 : 0} floatIntensity={MOTION_OK ? 0.7 : 0}>
           <group scale={size}>
             <mesh>
               <boxGeometry args={[0.2, 0.14, 0.14]} />
@@ -213,7 +213,7 @@ function OrbitPath({ radius, opacity = 0.22 }) {
 function Orbits() {
   const group = useRef()
   useFrame((state) => {
-    if (group.current) group.current.rotation.z = 0.38 + Math.sin(state.clock.getElapsedTime() * 0.08) * 0.03
+    if (MOTION_OK && group.current) group.current.rotation.z = 0.38 + Math.sin(state.clock.getElapsedTime() * 0.08) * 0.03
   })
   return (
     <group ref={group} rotation={[0.32, 0, 0.38]}>
@@ -231,8 +231,8 @@ function Orbits() {
 
 function SpinningEarth() {
   const group = useRef()
-  useFrame((state, delta) => {
-    if (group.current) group.current.rotation.y += delta * 0.05
+  useFrame((_, delta) => {
+    if (MOTION_OK && group.current) group.current.rotation.y += delta * 0.05
   })
   return (
     <group ref={group} rotation={[EARTH_TILT, 0.4, 0]}>
@@ -250,46 +250,49 @@ function SpinningEarth() {
 }
 
 /* Gentle idle drift plus pointer parallax; keeps the planet framed right of the hero copy. */
-function CameraRig() {
+function CameraRig({ variant }) {
   const wide = useThree((state) => state.size.width >= 1024)
   useFrame((state, delta) => {
     if (!MOTION_OK) return
     const t = state.clock.getElapsedTime()
-    const targetX = 0.4 + state.pointer.x * 0.5
-    const targetY = 1.05 + state.pointer.y * 0.28 + Math.sin(t * 0.22) * 0.16
+    const embedded = variant === 'feature'
+    const targetX = (embedded ? 0 : 0.4) + state.pointer.x * (embedded ? 0.24 : 0.5)
+    const targetY = (embedded ? 0.62 : 1.05) + state.pointer.y * (embedded ? 0.16 : 0.28) + Math.sin(t * 0.22) * 0.12
     state.camera.position.x = THREE.MathUtils.damp(state.camera.position.x, targetX, 2.2, delta)
     state.camera.position.y = THREE.MathUtils.damp(state.camera.position.y, targetY, 2.2, delta)
-    state.camera.lookAt(wide ? 0.5 : 0, -0.1, 0)
+    state.camera.lookAt(embedded ? 0 : wide ? 0.5 : 0, embedded ? -0.2 : -0.1, 0)
   })
   return null
 }
 
-/* Keeps the planet clear of the left-aligned hero copy on wide screens. */
-function SceneContent() {
+/* Reframes the full scene for either a wide hero or a contained feature panel. */
+function SceneContent({ variant }) {
   const width = useThree((state) => state.size.width)
-  const offset = width >= 1024 ? [3.05, -0.45, 0] : [0, -0.3, 0]
+  const embedded = variant === 'feature'
+  const offset = embedded ? [0, -0.25, 0] : width >= 1024 ? [3.05, -0.45, 0] : [0, -0.3, 0]
   return (
-    <group position={offset}>
+    <group position={offset} scale={embedded ? 0.82 : 1}>
       <SpinningEarth />
       <Orbits />
-      <Sparkles count={170} scale={[13, 9, 8]} size={1.5} speed={0.25} opacity={0.55} color="#a5f3fc" position={[0, 0.5, -1.5]} />
+      <Sparkles count={embedded ? 110 : 170} scale={[13, 9, 8]} size={1.5} speed={MOTION_OK ? 0.25 : 0} opacity={0.55} color="#a5f3fc" position={[0, 0.5, -1.5]} />
     </group>
   )
 }
 
-export function ThreeScene() {
+export function ThreeScene({ variant = 'hero' }) {
+  const embedded = variant === 'feature'
   return (
     <Canvas
       dpr={[1, 1.75]}
-      camera={{ position: [0.4, 1.1, 8.6], fov: 42 }}
+      camera={{ position: embedded ? [0, 0.62, 9.4] : [0.4, 1.1, 8.6], fov: embedded ? 44 : 42 }}
       gl={{ antialias: true, alpha: true }}
       style={{ position: 'absolute', inset: 0 }}
     >
       <ambientLight intensity={0.55} />
       <directionalLight position={[6, 4, 5]} intensity={1.6} color="#e2f5f2" />
       <directionalLight position={[-6, -2, -4]} intensity={0.5} color="#0e7490" />
-      <SceneContent />
-      <CameraRig />
+      <SceneContent variant={variant} />
+      <CameraRig variant={variant} />
     </Canvas>
   )
 }
@@ -324,14 +327,14 @@ export class SceneBoundary extends Component {
 
   render() {
     if (this.state.failed) return <StaticFallback />
-    return <ThreeScene />
+    return <ThreeScene variant={this.props.variant} />
   }
 }
 
-export function SpaceScene() {
+export function SpaceScene({ variant = 'hero' }) {
   return (
     <div className="absolute inset-0" aria-hidden="true">
-      <SceneBoundary />
+      <SceneBoundary variant={variant} />
     </div>
   )
 }

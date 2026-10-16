@@ -1,3 +1,4 @@
+import { isTaskClosed } from '../constants/status'
 import { Check, Search, UserPlus, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { MemberCard } from '../components/team/MemberCard'
@@ -6,17 +7,17 @@ import { Button } from '../components/ui/Button'
 import { useApp } from '../hooks/useApp'
 
 export function TeamPage() {
-  const { role, tasks, teamMembers, addTeamMember, updateTeamMember } = useApp()
+  const { can, tasks, teamMembers, addTeamMember, updateTeamMember } = useApp()
   const [search, setSearch] = useState('')
   const [availability, setAvailability] = useState('all')
   const [editingMember, setEditingMember] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalVersion, setModalVersion] = useState(0)
   const [notice, setNotice] = useState('')
-  const canManage = role.id === 'manager' || role.id === 'operator'
+  const canManage = can('team.manage')
 
   const openTaskCounts = useMemo(() => tasks
-    .filter((task) => task.status !== 'reported_complete')
+    .filter((task) => !isTaskClosed(task))
     .reduce((counts, task) => ({ ...counts, [task.assignee]: (counts[task.assignee] ?? 0) + 1 }), {}), [tasks])
 
   const visibleMembers = useMemo(() => {

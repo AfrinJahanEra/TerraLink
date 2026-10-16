@@ -52,18 +52,18 @@ export const initialTeamMembers = [
 ]
 
 export const initialSiteBudgets = {
-  'pond-a': 10000,
-  'pond-b': 7000,
-  'wetland-c': 8000,
-  'lake-d': 7000,
-  'beel-e': 13000,
+  'gulshan-baridhara-lake': 10000,
+  'dhanmondi-lake': 7000,
+  'gol-talab': 8000,
+  'ramna-lake': 7000,
+  'hatirjheel': 13000,
 }
 
 export const initialExpenses = [
-  { id: 'EXP-006', date: '2026-10-08', amount: 1800, description: 'Field evidence processing', taskId: 'TL-103', siteId: 'beel-e', receiptNote: 'Photograph labelling and local transport note', createdBy: 'Sadia Akter', createdAt: '2026-10-08T14:10:00.000Z' },
-  { id: 'EXP-005', date: '2026-10-05', amount: 2600, description: 'Routine Pond B inspection', taskId: 'TL-100', siteId: 'pond-b', receiptNote: 'Field travel receipt verified', createdBy: 'Rahim Uddin', createdAt: '2026-10-05T16:30:00.000Z' },
-  { id: 'EXP-004', date: '2026-10-03', amount: 4200, description: 'Preliminary community survey', taskId: null, siteId: 'pond-a', receiptNote: 'Survey logistics summary on file', createdBy: 'Sadia Akter', createdAt: '2026-10-03T11:20:00.000Z' },
-  { id: 'EXP-003', date: '2026-09-29', amount: 3100, description: 'Cloud-free imagery review support', taskId: null, siteId: 'wetland-c', receiptNote: 'Technical review note attached', createdBy: 'Nusrat Jahan', createdAt: '2026-09-29T10:00:00.000Z' },
-  { id: 'EXP-002', date: '2026-09-25', amount: 2500, description: 'Seasonal reference verification', taskId: null, siteId: 'lake-d', receiptNote: 'Local travel and field supplies', createdBy: 'Rahim Uddin', createdAt: '2026-09-25T15:40:00.000Z' },
-  { id: 'EXP-001', date: '2026-09-20', amount: 4000, description: 'Boundary consultation and access', taskId: null, siteId: 'beel-e', receiptNote: 'Community meeting expense note', createdBy: 'Sadia Akter', createdAt: '2026-09-20T09:25:00.000Z' },
+  { id: 'EXP-006', category: 'other', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-08', amount: 1800, description: 'Field evidence processing', taskId: 'TL-103', siteId: 'hatirjheel', receiptNote: 'Photograph labelling and local transport note', createdBy: 'Sadia Akter', createdAt: '2026-10-08T14:10:00.000Z' },
+  { id: 'EXP-005', category: 'transport', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-05', amount: 2600, description: 'Routine Dhanmondi Lake inspection', taskId: 'TL-100', siteId: 'dhanmondi-lake', receiptNote: 'Field travel receipt verified', createdBy: 'Rahim Uddin', createdAt: '2026-10-05T16:30:00.000Z' },
+  { id: 'EXP-004', category: 'other', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-03', amount: 4200, description: 'Preliminary community survey', taskId: null, siteId: 'gulshan-baridhara-lake', receiptNote: 'Survey logistics summary on file', createdBy: 'Sadia Akter', createdAt: '2026-10-03T11:20:00.000Z' },
+  { id: 'EXP-003', category: 'other', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-09-29', amount: 3100, description: 'Cloud-free imagery review support', taskId: null, siteId: 'gol-talab', receiptNote: 'Technical review note attached', createdBy: 'Nusrat Jahan', createdAt: '2026-09-29T10:00:00.000Z' },
+  { id: 'EXP-002', category: 'transport', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-09-25', amount: 2500, description: 'Seasonal reference verification', taskId: null, siteId: 'ramna-lake', receiptNote: 'Local travel and field supplies', createdBy: 'Rahim Uddin', createdAt: '2026-09-25T15:40:00.000Z' },
+  { id: 'EXP-001', category: 'other', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-09-20', amount: 4000, description: 'Boundary consultation and access', taskId: null, siteId: 'hatirjheel', receiptNote: 'Community meeting expense note', createdBy: 'Sadia Akter', createdAt: '2026-09-20T09:25:00.000Z' },
 ]

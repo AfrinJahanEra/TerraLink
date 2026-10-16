@@ -8,7 +8,7 @@ export function PrototypeBanner() {
   return (
     <div className="flex min-h-9 items-center justify-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-1.5 text-center text-xs font-medium text-slate-600">
       <FlaskConical size={14} aria-hidden="true" className="text-slate-500" />
-      <span>Prototype workspace — operational records and measurements are illustrative sample data.</span>
+      <span>Prototype workspace: tasks, costs and some site classifications are sample data. Imagery, outlines and saved measurements are real.</span>
       <button
         type="button"
         onClick={() => setVisible(false)}

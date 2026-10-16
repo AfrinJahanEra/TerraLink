@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
+import { PublicLayout } from './components/layout/PublicLayout'
 import { PageSkeleton } from './components/ui/PageSkeleton'
-import { canAccessPath } from './constants/navigation'
+import { homePathFor } from './constants/roles'
 import { AppProvider } from './context/AppContext'
 import { useApp } from './hooks/useApp'
 import { LandingPage } from './pages/LandingPage'
@@ -14,6 +15,12 @@ function page(loader, name) {
 
 const RegisterPage = page(() => import('./pages/RegisterPage'), 'RegisterPage')
 const DashboardPage = page(() => import('./pages/DashboardPage'), 'DashboardPage')
+const ExplorePage = page(() => import('./pages/ExplorePage'), 'ExplorePage')
+const PublicPondPage = page(() => import('./pages/PublicPondPage'), 'PublicPondPage')
+const ReportIssuePage = page(() => import('./pages/ReportIssuePage'), 'ReportIssuePage')
+const MyReportsPage = page(() => import('./pages/MyReportsPage'), 'MyReportsPage')
+const CommunityReportsPage = page(() => import('./pages/CommunityReportsPage'), 'CommunityReportsPage')
+const ComparePage = page(() => import('./pages/ComparePage'), 'ComparePage')
 const MapPage = page(() => import('./pages/MapPage'), 'MapPage')
 const SitesRegisterPage = page(() => import('./pages/SitesRegisterPage'), 'SitesRegisterPage')
 const SiteDetailsPage = page(() => import('./pages/SiteDetailsPage'), 'SiteDetailsPage')
@@ -29,14 +36,16 @@ const CommunicationsPage = page(() => import('./pages/CommunicationsPage'), 'Com
 const AuditTrailPage = page(() => import('./pages/AuditTrailPage'), 'AuditTrailPage')
 const SettingsPage = page(() => import('./pages/SettingsPage'), 'SettingsPage')
 
-function ProtectedLayout() {
-  const { role } = useApp()
-  return role ? <AppLayout /> : <Navigate to="/login" replace />
+function ActionRedirect() {
+  const { taskId } = useParams()
+  return <Navigate to={taskId ? `/tasks?task=${taskId}` : '/tasks'} replace />
 }
 
-function RoleRoute({ path, children }) {
+function ProtectedLayout() {
   const { role } = useApp()
-  return canAccessPath(role?.id, path) ? children : <Navigate to="/dashboard" replace />
+  if (!role) return <Navigate to="/login" replace />
+  // Users have no staff workspace; they work from the community pages.
+  return role.staff ? <AppLayout /> : <Navigate to={homePathFor(role.id)} replace />
 }
 
 function AppRoutes() {
@@ -48,25 +57,35 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/explore" element={<ExplorePage />} />
+          <Route path="/explore/:siteId" element={<PublicPondPage />} />
+          <Route path="/report" element={<ReportIssuePage />} />
+          <Route path="/my-reports" element={<MyReportsPage />} />
+        </Route>
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/map" element={<MapPage />} />
           <Route path="/sites" element={<SitesRegisterPage />} />
           <Route path="/sites/:siteId" element={<SiteDetailsPage />} />
+          <Route path="/compare/:siteId" element={<ComparePage />} />
           <Route path="/reviews" element={<ReviewQueuePage />} />
+          <Route path="/community" element={<CommunityReportsPage />} />
           <Route path="/tasks" element={<TasksPage />} />
+          <Route path="/actions" element={<ActionRedirect />} />
+          <Route path="/actions/:taskId" element={<ActionRedirect />} />
           <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/budget" element={<BudgetPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/team" element={<TeamPage />} />
           <Route path="/reports" element={<ReportPage />} />
           <Route path="/assistant" element={<AssistantPage />} />
-          <Route path="/communications" element={<RoleRoute path="/communications"><CommunicationsPage /></RoleRoute>} />
-          <Route path="/audit" element={<RoleRoute path="/audit"><AuditTrailPage /></RoleRoute>} />
-          <Route path="/settings" element={<RoleRoute path="/settings"><SettingsPage /></RoleRoute>} />
+          <Route path="/communications" element={<CommunicationsPage />} />
+          <Route path="/audit" element={<AuditTrailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/integrations" element={<Navigate to="/settings?tab=services" replace />} />
         </Route>
-        <Route path="*" element={<Navigate to={role ? '/dashboard' : '/login'} replace />} />
+        <Route path="*" element={<Navigate to={role ? homePathFor(role.id) : '/login'} replace />} />
       </Routes>
     </Suspense>
   )

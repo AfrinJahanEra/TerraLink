@@ -1,25 +1,15 @@
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { cn } from '../../utils/cn'
 
-export function KpiCard({ icon: Icon, label, value, trend, trendLabel, to }) {
-  const positive = trend >= 0
+export function KpiCard({ icon: Icon, label, value, detail, to }) {
   const content = (
-    <>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-slate-500">{label}</p>
-          <p className="mt-2 text-[28px] font-bold tracking-[-0.04em] text-slate-950">{value}</p>
-        </div>
-        <span className="grid size-10 place-items-center rounded-xl bg-slate-100 text-slate-600"><Icon size={19} strokeWidth={1.8} /></span>
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-medium text-slate-500">{label}</p>
+        <p className="mt-2 text-[28px] font-bold tracking-[-0.04em] text-slate-950">{value}</p>
+        <p className="mt-1 text-[11px] text-slate-400">{detail}</p>
       </div>
-      <div className="mt-4 flex items-center gap-1.5 text-[11px]">
-        <span className={cn('inline-flex items-center gap-0.5 font-semibold', positive ? 'text-slate-700' : 'text-rose-600')}>
-          {positive ? <ArrowUpRight size={13} className="text-slate-500" /> : <ArrowDownRight size={13} className="text-slate-500" />}{Math.abs(trend)}%
-        </span>
-        <span className="text-slate-400">{trendLabel}</span>
-      </div>
-    </>
+      <span className="grid size-10 place-items-center rounded-xl bg-slate-100 text-slate-600"><Icon size={19} strokeWidth={1.8} /></span>
+    </div>
   )
 
   return to ? (

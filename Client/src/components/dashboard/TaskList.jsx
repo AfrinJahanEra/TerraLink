@@ -1,14 +1,9 @@
 import { ArrowRight, CalendarDays } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { TASK_STATUS } from '../../constants/status'
 import { cn } from '../../utils/cn'
 
-const statuses = {
-  review_pending: { label: 'Review pending', dot: 'bg-amber-500' },
-  approved: { label: 'Approved', dot: 'bg-sky-500' },
-  in_progress: { label: 'In progress', dot: 'bg-brand-600' },
-  reported_complete: { label: 'Reported complete', dot: 'bg-emerald-500' },
-  unknown: { label: 'Unknown', dot: 'bg-slate-400' },
-}
+const dots = { open: 'bg-slate-400', in_progress: 'bg-brand-600', blocked: 'bg-amber-500', awaiting_verification: 'bg-brand-400', completed: 'bg-brand-800', cancelled: 'bg-slate-300' }
 
 export function TaskList({ tasks, title = 'Open tasks', subtitle = 'Priority work across all sites' }) {
   return (
@@ -19,7 +14,7 @@ export function TaskList({ tasks, title = 'Open tasks', subtitle = 'Priority wor
       </div>
       <div className="divide-y divide-slate-100">
         {tasks.map((task) => {
-          const status = statuses[task.status] ?? statuses.unknown
+          const status = { label: TASK_STATUS[task.status]?.label ?? 'Unknown', dot: dots[task.status] ?? 'bg-slate-400' }
           return (
             <Link key={task.id} to="/tasks" className="group grid gap-3 px-5 py-3.5 transition hover:bg-slate-50/80 sm:grid-cols-[minmax(0,1fr)_110px_90px_120px] sm:items-center">
               <div className="min-w-0"><p className="truncate text-sm font-medium text-slate-800">{task.title}</p><p className="mt-1 text-[11px] text-slate-400">{task.id} · {task.site}</p></div>

@@ -185,8 +185,6 @@ export function SettingsPage() {
                     <option value="bn">বাংলা (Bangla)</option>
                   </select>
                 </Field>
-                <Field label="Interface language">English</Field>
-                <Field label="Assistant answers">Bangla</Field>
               </dl>
             </Panel>
             <Panel title="Signed in as">

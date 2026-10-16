@@ -1,8 +1,8 @@
-import { Filter, RotateCcw, Search } from 'lucide-react'
+import { RotateCcw, Search } from 'lucide-react'
 import { TASK_STATUS } from '../../constants/status'
 
-export function TaskFilters({ filters, sites, members, onChange, onReset }) {
-  const active = filters.search || filters.site !== 'all' || filters.status !== 'all' || filters.assignee !== 'all' || filters.overdue
+export function TaskFilters({ filters, sites, members, showAssignee = true, onChange, onReset }) {
+  const active = filters.search || filters.site !== 'all' || filters.status !== 'all' || (showAssignee && filters.assignee !== 'all') || filters.overdue
 
   function update(key, value) {
     onChange({ ...filters, [key]: value })
@@ -19,13 +19,12 @@ export function TaskFilters({ filters, sites, members, onChange, onReset }) {
         <div className="grid gap-2 sm:grid-cols-3 xl:flex xl:items-center">
           <select value={filters.site} onChange={(event) => update('site', event.target.value)} aria-label="Filter by site" className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none focus:border-brand-400"><option value="all">All sites</option>{sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}</select>
           <select value={filters.status} onChange={(event) => update('status', event.target.value)} aria-label="Filter by status" className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none focus:border-brand-400"><option value="all">All statuses</option>{Object.entries(TASK_STATUS).map(([id, config]) => <option key={id} value={id}>{config.label}</option>)}</select>
-          <select value={filters.assignee} onChange={(event) => update('assignee', event.target.value)} aria-label="Filter by assignee" className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none focus:border-brand-400"><option value="all">All assignees</option>{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select>
+          {showAssignee && <select value={filters.assignee} onChange={(event) => update('assignee', event.target.value)} aria-label="Filter by assignee" className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 outline-none focus:border-brand-400"><option value="all">All assignees</option>{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select>}
         </div>
 
         <label className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600"><input type="checkbox" checked={filters.overdue} onChange={(event) => update('overdue', event.target.checked)} className="accent-slate-700" />Overdue only</label>
         {active && <button type="button" onClick={onReset} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-brand-700 hover:bg-brand-50"><RotateCcw size={14} className="text-slate-500" />Reset</button>}
       </div>
-      <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-400"><Filter size={12} className="text-slate-500" />Filters update the board and list immediately.</div>
     </section>
   )
 }

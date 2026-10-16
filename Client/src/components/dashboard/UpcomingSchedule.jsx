@@ -38,7 +38,7 @@ export function UpcomingSchedule({ meetings, tasks, canSchedule = false }) {
       <AgendaList items={items} onOpenItem={openItem} compact emptyText="Nothing is scheduled for the next two weeks." />
       {(overdueCount > 0 || hiddenCount > 0 || canSchedule) && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 px-5 py-3 text-[11px]">
-          {overdueCount > 0 && <Link to="/tasks" className="font-semibold text-rose-700 hover:text-rose-800">{overdueCount} overdue {overdueCount === 1 ? 'deadline' : 'deadlines'}</Link>}
+          {overdueCount > 0 && <Link to="/tasks" className="font-semibold text-amber-700 hover:text-amber-800">{overdueCount} overdue {overdueCount === 1 ? 'deadline' : 'deadlines'}</Link>}
           {hiddenCount > 0 && <Link to="/schedule" className="text-slate-500 hover:text-slate-800">{hiddenCount} more in the schedule</Link>}
           {canSchedule && <Link to="/schedule?new=review_meeting" className="ml-auto font-semibold text-brand-700 hover:text-brand-900">Schedule a meeting</Link>}
         </div>

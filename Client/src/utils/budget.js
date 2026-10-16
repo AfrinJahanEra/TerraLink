@@ -1,7 +1,9 @@
+import { isTaskClosed } from '../constants/status'
+
 export function getDirectSiteExpenses(siteId, tasks, expenses) {
   const taskIds = new Set(tasks.filter((task) => task.siteId === siteId).map((task) => task.id))
   return expenses
-    .filter((expense) => expense.siteId === siteId && (!expense.taskId || !taskIds.has(expense.taskId)))
+    .filter((expense) => expense.approvalStatus === 'approved' && expense.siteId === siteId && (!expense.taskId || !taskIds.has(expense.taskId)))
     .reduce((sum, expense) => sum + Number(expense.amount || 0), 0)
 }
 
@@ -50,7 +52,7 @@ export function calculateBudgetSummary(siteRows, tasks) {
   const total = siteRows.reduce((sum, row) => sum + row.planned, 0)
   const spent = siteRows.reduce((sum, row) => sum + row.actual, 0)
   const pending = tasks
-    .filter((task) => task.status !== 'reported_complete')
+    .filter((task) => !isTaskClosed(task))
     .reduce((sum, task) => sum + Math.max(Number(task.estimatedCost || 0) - Number(task.actualCost || 0), 0), 0)
 
   return {

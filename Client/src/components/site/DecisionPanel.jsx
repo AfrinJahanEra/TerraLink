@@ -56,7 +56,7 @@ export function DecisionPanel({ site, existingDecision, onSave, onCreateTask, sc
           />
         </label>
 
-        {saved && <p role="status" className="mt-3 flex items-center gap-2 text-xs font-medium text-emerald-700"><Check size={14} className="text-slate-600" />Decision saved across the workspace.</p>}
+        {saved && <p role="status" className="mt-3 flex items-center gap-2 text-xs font-medium text-brand-700"><Check size={14} className="text-slate-600" />Decision saved across the workspace.</p>}
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <Button type="submit" className="flex-1">Save decision <Check size={15} /></Button>

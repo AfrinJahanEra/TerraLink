@@ -1,3 +1,4 @@
+import { isTaskClosed } from '../constants/status'
 import { ArrowRight, CalendarPlus, Download, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -13,16 +14,11 @@ import { downloadCsv } from '../utils/csv'
 import { formatBdt } from '../utils/currency'
 import { buildScheduleLink, formatDateLabel, todayKey } from '../utils/schedule'
 
-function formatChange(change) {
-  if (change === null || change === undefined) return '—'
-  return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`
-}
-
 export function SitesRegisterPage() {
-  const { role, sites, tasks, siteBudgets, expenses, meetings } = useApp()
+  const { can, sites, tasks, siteBudgets, expenses, meetings } = useApp()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
-  const canSchedule = role.id === 'manager' || role.id === 'operator'
+  const canSchedule = can('schedule.manage')
   const today = todayKey()
 
   const rows = useMemo(() => {
@@ -34,7 +30,7 @@ export function SitesRegisterPage() {
       return {
         site,
         budget: budgets.get(site.id),
-        openTasks: tasks.filter((task) => task.siteId === site.id && task.status !== 'reported_complete').length,
+        openTasks: tasks.filter((task) => task.siteId === site.id && !isTaskClosed(task)).length,
         nextVisit,
       }
     })
@@ -52,9 +48,9 @@ export function SitesRegisterPage() {
 
   function exportRegister() {
     downloadCsv(`terralink-sites-${today}.csv`, [
-      ['Site', 'Location', 'Status', 'Area', 'Change (%)', 'Clear coverage', 'Last observed', 'Open tasks', 'Planned (BDT)', 'Actual (BDT)', 'Remaining (BDT)', 'Next scheduled visit'],
+      ['Site', 'Location', 'Status', 'Mapped area', 'Open reports', 'Boundary source', 'Open tasks', 'Planned (BDT)', 'Actual (BDT)', 'Remaining (BDT)', 'Next scheduled visit'],
       ...filtered.map(({ site, budget, openTasks, nextVisit }) => [
-        site.name, site.location, SITE_STATUS[site.status]?.label ?? site.status, site.area, site.change ?? '', site.clearCoverage, site.lastObserved,
+        site.name, site.location, SITE_STATUS[site.status]?.label ?? site.status, site.area, site.openReports, site.boundarySource,
         openTasks, budget?.planned ?? 0, budget?.actual ?? 0, budget?.remaining ?? 0, nextVisit ? `${nextVisit.date} ${nextVisit.startTime}` : '',
       ]),
     ])
@@ -65,7 +61,7 @@ export function SitesRegisterPage() {
       <PageHeader
         eyebrow="Monitoring"
         title="Sites register"
-        description="Every monitored wetland with its latest analysis status, open work, budget position, and next scheduled visit."
+        description="Every monitored water body with its status, mapped area, community reports, open work, budget position, and next scheduled visit."
         actions={<Button type="button" variant="secondary" onClick={exportRegister}><Download size={15} />Export CSV</Button>}
       />
 
@@ -73,16 +69,16 @@ export function SitesRegisterPage() {
         items={[
           { label: 'monitored sites', value: sites.length },
           { label: 'awaiting review', value: reviewCount, tone: reviewCount ? 'amber' : undefined },
+          { label: 'with a reported issue', value: sites.filter((site) => site.status === 'reported_issue').length },
           { label: 'confirmed for follow-up', value: followUpCount, tone: followUpCount ? 'rose' : undefined },
           { label: 'over budget', value: overBudget, tone: overBudget ? 'rose' : undefined },
         ]}
-        note="Sample monitoring data"
       />
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="relative min-w-[220px] flex-1 sm:max-w-xs">
           <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search sites or districts" aria-label="Search sites" className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 outline-none focus:border-brand-400" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search water bodies or areas" aria-label="Search sites" className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-700 outline-none focus:border-brand-400" />
         </label>
         <select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Status" className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">
           <option value="all">All statuses</option>
@@ -93,15 +89,13 @@ export function SitesRegisterPage() {
 
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-xs">
+          <table className="w-full min-w-[900px] text-left text-xs">
             <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
               <tr>
                 <th className="px-5 py-3">Site</th>
                 <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3 text-right">Area</th>
-                <th className="px-3 py-3 text-right">Change</th>
-                <th className="px-3 py-3 text-right">Clear sky</th>
-                <th className="px-3 py-3">Last observed</th>
+                <th className="px-3 py-3 text-right">Mapped area</th>
+                <th className="px-3 py-3 text-right">Open reports</th>
                 <th className="px-3 py-3 text-right">Open tasks</th>
                 <th className="px-3 py-3 text-right">Budget used</th>
                 <th className="px-3 py-3">Next visit</th>
@@ -116,12 +110,10 @@ export function SitesRegisterPage() {
                     <td className="px-5 py-3"><Link to={`/sites/${site.id}`} className="font-semibold text-slate-800 hover:text-brand-700">{site.name}</Link><p className="mt-0.5 text-[10px] text-slate-400">{site.location}</p></td>
                     <td className="px-3 py-3"><Badge tone={statusInfo.tone} className="px-2 py-0.5 text-[10px]">{statusInfo.label}</Badge></td>
                     <td className="px-3 py-3 text-right tabular-nums text-slate-600">{site.area}</td>
-                    <td className={cn('px-3 py-3 text-right font-semibold tabular-nums', site.change < -10 ? 'text-rose-700' : 'text-slate-700')}>{formatChange(site.change)}</td>
-                    <td className="px-3 py-3 text-right tabular-nums text-slate-600">{site.clearCoverage}</td>
-                    <td className="px-3 py-3 text-slate-600">{site.lastObserved}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-slate-700">{site.openReports}</td>
                     <td className="px-3 py-3 text-right tabular-nums text-slate-700">{openTasks}</td>
                     <td className="px-3 py-3 text-right tabular-nums">
-                      <span className={cn('font-semibold', budget?.overBudget ? 'text-rose-700' : 'text-slate-700')}>{formatBdt(budget?.actual)}</span>
+                      <span className={cn('font-semibold', budget?.overBudget ? 'text-amber-700' : 'text-slate-700')}>{formatBdt(budget?.actual)}</span>
                       <span className="text-slate-400"> / {formatBdt(budget?.planned)}</span>
                     </td>
                     <td className="px-3 py-3">
@@ -145,7 +137,7 @@ export function SitesRegisterPage() {
                   </tr>
                 )
               })}
-              {!filtered.length && <tr><td colSpan={10} className="px-5 py-10 text-center text-xs text-slate-500">No sites match the current filters.</td></tr>}
+              {!filtered.length && <tr><td colSpan={8} className="px-5 py-10 text-center text-xs text-slate-500">No sites match the current filters.</td></tr>}
             </tbody>
           </table>
         </div>

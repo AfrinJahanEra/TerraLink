@@ -1,3 +1,4 @@
+import { isTaskClosed } from '../constants/status'
 import { MEETING_TYPES } from '../data/schedule'
 import { isTaskOverdue } from './tasks'
 
@@ -78,7 +79,7 @@ export function buildScheduleItems({ meetings, tasks = [] }) {
     record: meeting,
   }))
   const deadlineItems = tasks
-    .filter((task) => task.dueDate && task.status !== 'reported_complete')
+    .filter((task) => task.dueDate && !isTaskClosed(task))
     .map((task) => ({
       id: `deadline-${task.id}`,
       kind: 'deadline',
@@ -93,10 +94,10 @@ export function buildScheduleItems({ meetings, tasks = [] }) {
 }
 
 export function itemDotClass(item) {
-  if (item.kind === 'deadline') return item.status === 'overdue' ? 'bg-rose-500' : 'bg-amber-500'
-  if (item.status === 'completed') return 'bg-emerald-500'
+  if (item.kind === 'deadline') return item.status === 'overdue' ? 'bg-amber-500' : 'bg-slate-400'
+  if (item.status === 'completed') return 'bg-brand-800'
   if (item.status === 'cancelled') return 'bg-slate-300'
-  return 'bg-sky-500'
+  return 'bg-brand-500'
 }
 
 export function groupItemsByDate(items) {

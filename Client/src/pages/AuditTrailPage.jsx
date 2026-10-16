@@ -13,15 +13,15 @@ const PAGE_SIZE = 50
 const selectClass = 'h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400'
 
 export function AuditTrailPage() {
-  const { sites, tasks, decisions, expenses, meetings, notificationLogs } = useApp()
+  const { sites, tasks, decisions, expenses, meetings, notificationLogs, communityReports, comparisons } = useApp()
   const [moduleFilter, setModuleFilter] = useState('All')
   const [actor, setActor] = useState('All')
   const [search, setSearch] = useState('')
   const [limit, setLimit] = useState(PAGE_SIZE)
 
   const events = useMemo(
-    () => buildAuditEvents({ tasks, decisions, expenses, meetings, notificationLogs, sites }),
-    [decisions, expenses, meetings, notificationLogs, sites, tasks],
+    () => buildAuditEvents({ tasks, decisions, expenses, meetings, notificationLogs, sites, communityReports, comparisons }),
+    [communityReports, comparisons, decisions, expenses, meetings, notificationLogs, sites, tasks],
   )
   const actors = useMemo(() => [...new Set(events.map((event) => event.actor).filter(Boolean))].sort(), [events])
   const filtered = useMemo(() => {
@@ -65,7 +65,6 @@ export function AuditTrailPage() {
           { label: 'people involved', value: people },
           { label: 'modules tracked', value: AUDIT_MODULES.length },
         ]}
-        note="Records are read-only"
       />
 
       <div className="flex flex-wrap items-center gap-3">

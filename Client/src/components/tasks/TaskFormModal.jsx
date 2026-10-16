@@ -1,15 +1,18 @@
-import { Bell, CalendarDays, ClipboardPlus, Mail, MessageCircle, UserRound, X } from 'lucide-react'
+import { Bell, CalendarDays, ClipboardPlus, FileText, Mail, MessageCircle, UserRound, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { REPORT_CATEGORIES } from '../../constants/reports'
+import { TASK_PRIORITIES } from '../../constants/actions'
+import { addDays, todayInDhaka } from '../../utils/reports'
 import { Button } from '../ui/Button'
 
-export function TaskFormModal({ open, sites, members, initialSiteId, onClose, onCreate }) {
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [siteId, setSiteId] = useState(initialSiteId ?? sites[0]?.id ?? '')
+export function TaskFormModal({ open, sites, members, initialSiteId, report = null, onClose, onCreate }) {
+  const [title, setTitle] = useState(report ? `Respond to ${REPORT_CATEGORIES[report.category].label.toLowerCase()} (${report.id})` : '')
+  const [description, setDescription] = useState(report ? `Report ${report.id}: ${report.description}\n\nVisit the site, photograph the problem and the work done, and record the cost.` : '')
+  const [siteId, setSiteId] = useState(report?.siteId ?? initialSiteId ?? sites[0]?.id ?? '')
   const [assignee, setAssignee] = useState(members[0]?.name ?? '')
-  const [dueDate, setDueDate] = useState('2026-10-14')
-  const [estimatedCost, setEstimatedCost] = useState('2500')
-  const [priority, setPriority] = useState('Medium')
+  const [dueDate, setDueDate] = useState(addDays(todayInDhaka(), 7))
+  const [estimatedCost, setEstimatedCost] = useState('')
+  const [priority, setPriority] = useState(report ? 'High' : 'Medium')
   const [notifications, setNotifications] = useState({ email: true, calendar: true, whatsapp: true })
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export function TaskFormModal({ open, sites, members, initialSiteId, onClose, on
     onCreate({
       title: title.trim(), description: description.trim(), site: site.name, siteId,
       assignee, initials: member.initials, dueDate, estimatedCost: Number(estimatedCost),
-      actualCost: 0, priority, notifications,
+      priority, notifications, reportId: report?.id ?? null,
     })
   }
 
@@ -48,17 +51,18 @@ export function TaskFormModal({ open, sites, members, initialSiteId, onClose, on
         </div>
 
         <form onSubmit={submit} className="space-y-4 p-5">
+          {report && <p className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600"><FileText size={14} className="mt-0.5 shrink-0 text-slate-500" />Created from verified report <strong className="font-semibold text-slate-800">{report.id}</strong>. The task keeps the link, so the report shows what was done about it.</p>}
           <label className="block"><span className="text-xs font-semibold text-slate-700">Task title</span><input value={title} onChange={(event) => setTitle(event.target.value)} required placeholder="Describe the required action" className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           <label className="block"><span className="text-xs font-semibold text-slate-700">Description</span><textarea value={description} onChange={(event) => setDescription(event.target.value)} required rows={3} placeholder="Add evidence requirements and expected outcome" className="mt-1.5 w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 text-xs leading-5 text-slate-700 outline-none focus:border-brand-400" /></label>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block"><span className="text-xs font-semibold text-slate-700">Site</span><select value={siteId} onChange={(event) => setSiteId(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{sites.map((site) => <option key={site.id} value={site.id}>{site.name} · {site.location}</option>)}</select></label>
+            <label className="block"><span className="text-xs font-semibold text-slate-700">Site</span><select value={siteId} disabled={Boolean(report?.siteId)} onChange={(event) => setSiteId(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{sites.map((site) => <option key={site.id} value={site.id}>{site.name} · {site.location}</option>)}</select></label>
             <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><UserRound size={14} className="text-slate-500" />Assignee</span><select value={assignee} onChange={(event) => setAssignee(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{members.map((member) => <option key={member.id} value={member.name}>{member.name}</option>)}</select></label>
-            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Deadline</span><input type="date" min="2026-10-09" value={dueDate} onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
+            <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Deadline</span><input type="date" min={todayInDhaka()} value={dueDate} onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
             <label className="block"><span className="text-xs font-semibold text-slate-700">Estimated cost (BDT)</span><input type="number" min="0" step="100" value={estimatedCost} onChange={(event) => setEstimatedCost(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           </div>
 
-          <label className="block"><span className="text-xs font-semibold text-slate-700">Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400"><option>High</option><option>Medium</option><option>Low</option></select></label>
+          <label className="block"><span className="text-xs font-semibold text-slate-700">Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400">{TASK_PRIORITIES.map((item) => <option key={item}>{item}</option>)}</select></label>
 
           <fieldset className="rounded-lg border border-slate-200 p-3">
             <legend className="px-1 text-xs font-semibold text-slate-700">Notification preferences</legend>

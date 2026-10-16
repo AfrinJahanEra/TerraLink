@@ -1,8 +1,19 @@
+import { isTaskClosed } from '../constants/status'
+import { addDays, todayInDhaka } from './reports'
+
 export function isTaskOverdue(task) {
-  if (!task.dueDate || task.status === 'reported_complete') return false
+  if (!task.dueDate || isTaskClosed(task)) return false
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   return new Date(`${task.dueDate}T00:00:00`) < today
+}
+
+/** Short deadline label that stays correct as days pass. */
+export function dueLabel(dueDate) {
+  const today = todayInDhaka()
+  if (dueDate === today) return 'Today'
+  if (dueDate === addDays(today, 1)) return 'Tomorrow'
+  return formatTaskDate(dueDate)
 }
 
 export function formatTaskDate(dateValue) {
