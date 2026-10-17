@@ -1,0 +1,7 @@
+# Never upload local secrets or runtime data; Vercel builds use the project's Environment Variables.
+.env
+.env.*
+!.env.example
+local-data
+dist
+node_modules

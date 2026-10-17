@@ -1,5 +1,4 @@
 import emailjs from '@emailjs/browser'
-import { hasLocalServer } from './localServer'
 
 const templateIds = {
   task_assign: import.meta.env.VITE_EMAILJS_TEMPLATE_TASK_ASSIGN_ID,
@@ -12,10 +11,14 @@ const templateIds = {
 
 let smtpStatus = null
 
-/** SMTP settings live on the local data server; the browser only learns whether they are complete. */
+/**
+ * SMTP settings live on a server (the local data server or the deployed Vercel function);
+ * the browser only learns whether they are complete. Without that endpoint the SPA host
+ * answers with index.html, which is why the content type is checked before parsing.
+ */
 function fetchSmtpStatus() {
-  smtpStatus ??= hasLocalServer()
-    .then((available) => available ? fetch('/api/email/status', { cache: 'no-store' }).then((response) => response.json()) : null)
+  smtpStatus ??= fetch('/api/email/status', { cache: 'no-store' })
+    .then((response) => response.ok && (response.headers.get('content-type') ?? '').includes('application/json') ? response.json() : null)
     .catch(() => null)
   return smtpStatus
 }

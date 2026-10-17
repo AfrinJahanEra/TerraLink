@@ -4,3 +4,5 @@ node_modules
 
 # Shared workspace and uploaded photos from the local data server
 local-data
+.vercel
+.env*

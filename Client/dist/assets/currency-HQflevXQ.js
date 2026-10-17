@@ -1,0 +1,1 @@
+var e=[`০`,`১`,`২`,`৩`,`৪`,`৫`,`৬`,`৭`,`৮`,`৯`];function t(e){let t=Number(e)||0;return`${t<0?`−`:``}৳${Math.abs(Math.round(t)).toLocaleString(`en-US`)}`}function n(t){return String(t).replace(/\d/g,t=>e[Number(t)])}function r(e){return n(t(e))}export{r as n,n as r,t};
