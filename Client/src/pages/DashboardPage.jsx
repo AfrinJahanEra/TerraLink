@@ -12,18 +12,15 @@ import {
   TriangleAlert,
   WalletCards,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BudgetCard } from '../components/dashboard/InsightsPanel'
 import { KpiCard } from '../components/dashboard/KpiCard'
-import { SiteSnapshot } from '../components/dashboard/SiteSnapshot'
-import { TaskList } from '../components/dashboard/TaskList'
+import { SiteOverview } from '../components/dashboard/SiteOverview'
 import { UpcomingSchedule } from '../components/dashboard/UpcomingSchedule'
-import { AccessPanel } from '../components/layout/AccessPanel'
 import { WetlandMap } from '../components/map/WetlandMap'
-import { ROLE_ACCESS } from '../constants/access'
 import { OPEN_REPORT_STATUSES, REPORT_CATEGORIES } from '../constants/reports'
 import { useApp } from '../hooks/useApp'
+import { buildSiteBudgetRows } from '../utils/budget'
 import { formatBdt } from '../utils/currency'
 import { isTaskOverdue } from '../utils/tasks'
 
@@ -38,25 +35,19 @@ function formatToday() {
   return new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date())
 }
 
-/** What each role's dashboard is for. The copy matches the access table. */
+/** Copy for each role's dashboard. */
 const VIEWS = {
   manager: {
-    guidance: 'Verify reports, review sites, assign work, approve what is finished, and watch the budget.',
     mapTitle: 'Wetland monitoring map',
     mapHint: 'Select an outline for its record or a diamond for a community report',
-    taskTitle: 'Programme tasks',
-    taskSubtitle: 'Work across every site',
     priorityTitle: 'Needs your decision',
     priorityLink: '/reviews',
     priorityLinkLabel: 'Review queue',
   },
   coordinator: {
-    guidance: 'Your assigned tasks, the sites they are at, your schedule, and your expenses.',
     mapTitle: 'Map of my sites',
     mapHint: 'The water bodies you have tasks at',
-    taskTitle: 'My assigned tasks',
-    taskSubtitle: 'Only work assigned to you',
-    priorityTitle: 'Needs your attention',
+    priorityTitle: 'Do next',
     priorityLink: '/tasks',
     priorityLinkLabel: 'My tasks',
   },
@@ -96,7 +87,8 @@ function buildPriorities(roleId, { scope, siteName }) {
       ...mine.filter((task) => task.status === 'blocked').map((task) => taskItem(task, `${task.title} is blocked`, OctagonAlert)),
       ...mine.filter(isTaskOverdue).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
       ...mine.filter((task) => task.due === 'Today' && !isTaskOverdue(task) && task.status !== 'awaiting_verification' && task.status !== 'completed').map((task) => taskItem(task, `${task.title} is due today`, FileClock)),
-    ].slice(0, 6)
+      ...mine.filter((task) => task.status === 'open' && !isTaskOverdue(task) && task.due !== 'Today').map((task) => taskItem(task, `Start: ${task.title}`, ClipboardCheck)),
+    ].filter((item, index, list) => list.findIndex((other) => other.to === item.to) === index).slice(0, 5)
   }
 
   return [
@@ -104,14 +96,14 @@ function buildPriorities(roleId, { scope, siteName }) {
     ...scope.tasks.filter((task) => task.status === 'awaiting_verification').slice(0, 2).map((task) => taskItem(task, `${task.title} is awaiting verification`, ShieldCheck)),
     ...scope.tasks.filter(isTaskOverdue).slice(0, 2).map((task) => taskItem(task, `${task.title} is overdue`, TriangleAlert)),
     ...scope.sites.filter((site) => site.status === 'needs_review').slice(0, 2).map((site) => ({ id: site.id, title: `${site.name} needs a review decision`, detail: 'Compare satellite imagery and record a decision', to: `/sites/${site.id}`, icon: CircleAlert })),
-  ].slice(0, 6)
+  ].slice(0, 5)
 }
 
 function PriorityList({ view, items }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-card">
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-        <div><h2 className="text-sm font-semibold text-slate-900">{view.priorityTitle}</h2><p className="mt-0.5 text-xs text-slate-400">Open these first</p></div>
+        <h2 className="text-sm font-semibold text-slate-900">{view.priorityTitle}</h2>
         <Link to={view.priorityLink} className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">{view.priorityLinkLabel} <ArrowRight size={14} className="text-slate-500" /></Link>
       </div>
       {items.length ? (
@@ -135,81 +127,58 @@ function PriorityList({ view, items }) {
   )
 }
 
-/** A coordinator's own money picture: what is approved, what is waiting, and what was rejected. */
-function MyExpenses({ expenses }) {
-  const by = (status) => expenses.filter((expense) => expense.approvalStatus === status)
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-card">
-      <div className="flex items-center justify-between"><div><h2 className="text-sm font-semibold text-slate-900">My expenses</h2><p className="mt-0.5 text-xs text-slate-400">On your tasks only</p></div><Link to="/expenses" aria-label="Open expenses" className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><ArrowRight size={16} /></Link></div>
-      <dl className="mt-4 divide-y divide-slate-100 text-xs">
-        <div className="flex justify-between gap-3 py-2.5"><dt className="text-slate-500">Approved</dt><dd className="font-semibold text-slate-900">{formatBdt(sumAmount(by('approved')))}</dd></div>
-        <div className="flex justify-between gap-3 py-2.5"><dt className="text-slate-500">Waiting for approval</dt><dd className="font-semibold text-slate-900">{formatBdt(sumAmount(by('pending')))}</dd></div>
-        <div className="flex justify-between gap-3 py-2.5"><dt className="text-slate-500">Rejected</dt><dd className="font-semibold text-slate-900">{by('rejected').length}</dd></div>
-      </dl>
-    </section>
-  )
-}
-
 export function DashboardPage() {
-  const { role, can, scope, budgetSummary } = useApp()
+  const { role, can, scope, budgetSummary, siteBudgets } = useApp()
   const navigate = useNavigate()
-  const [accessOpen, setAccessOpen] = useState(false)
   const view = VIEWS[role.id]
-  const access = ROLE_ACCESS[role.id]
 
   const mapReports = useMemo(() => scope.communityReports.filter((report) => OPEN_REPORT_STATUSES.includes(report.status) && !report.resolved), [scope.communityReports])
   const kpis = useMemo(() => buildKpis(role.id, { scope, budgetSummary }), [budgetSummary, role.id, scope])
+  // Budget figures only for roles that may see the budget.
+  const budgetRows = useMemo(
+    () => can('budget.view') ? buildSiteBudgetRows(scope.sites, scope.tasks, siteBudgets, scope.expenses) : null,
+    [can, scope, siteBudgets],
+  )
   const priorities = useMemo(
     () => buildPriorities(role.id, { scope, siteName: (id) => scope.sites.find((site) => site.id === id)?.name }),
     [role.id, scope],
   )
 
   return (
-    <div className="animate-fade-in space-y-6 pb-8">
-      <header className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-        <div>
-          <p className="text-xs font-semibold text-brand-700">{formatToday()}</p>
-          <h2 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-slate-950 sm:text-[28px]">{getGreeting()}, {role.user.name.split(' ')[0]}.</h2>
-          <p className="mt-1.5 text-sm text-slate-500">{role.label} workspace. {view.guidance}</p>
-        </div>
-        <button type="button" onClick={() => setAccessOpen(true)} className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-card transition hover:bg-slate-50 lg:self-auto">
-          <ShieldCheck size={15} className="text-brand-700" />
-          <span className="text-left leading-4"><span className="block">My role and access</span><span className="block text-[10px] font-normal text-slate-400">{access.headline}</span></span>
-        </button>
+    <div className="animate-fade-in space-y-5 pb-8">
+      <header>
+        <p className="text-xs font-semibold text-brand-700">{formatToday()}</p>
+        <h2 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-slate-950">{getGreeting()}, {role.user.name.split(' ')[0]}.</h2>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((metric) => <KpiCard key={metric.label} {...metric} />)}
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.9fr)_minmax(320px,0.9fr)]">
-        <div className="space-y-6">
-          {can('map.view') && <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div><h2 className="text-sm font-semibold text-slate-900">{view.mapTitle}</h2><p className="mt-0.5 text-xs text-slate-400">{view.mapHint}</p></div>
-              <Link to="/map" className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">Open full map <ArrowRight size={14} className="text-slate-500" /></Link>
-            </div>
-            <WetlandMap
-              sites={scope.sites}
-              reports={mapReports}
-              selectedSite={null}
-              onSelectSite={(id) => navigate(`/sites/${id}`)}
-              onSelectReport={can('community.view') ? (id) => navigate(`/community?report=${id}`) : undefined}
-              className="h-[400px]"
-            />
-          </section>}
-          {role.id === 'coordinator' && <SiteSnapshot sites={scope.sites} title="My sites" registerLink={null} />}
-          <TaskList tasks={scope.tasks} title={view.taskTitle} subtitle={view.taskSubtitle} />
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.9fr)_minmax(320px,0.9fr)]">
+        <div className="space-y-5">
+        {can('map.view') && <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div><h2 className="text-sm font-semibold text-slate-900">{view.mapTitle}</h2><p className="mt-0.5 text-xs text-slate-400">{view.mapHint}</p></div>
+            <Link to="/map" className="flex items-center gap-1 text-xs font-semibold text-brand-700 hover:text-brand-900">Open full map <ArrowRight size={14} className="text-slate-500" /></Link>
+          </div>
+          <WetlandMap
+            sites={scope.sites}
+            reports={mapReports}
+            selectedSite={null}
+            onSelectSite={(id) => navigate(`/sites/${id}`)}
+            onSelectReport={can('community.view') ? (id) => navigate(`/community?report=${id}`) : undefined}
+            className="h-[400px]"
+          />
+        </section>}
+        <SiteOverview sites={scope.sites} tasks={scope.tasks} budgetRows={budgetRows} title={role.id === 'coordinator' ? 'My water bodies' : undefined} showRegister={can('sites.register')} limit={2} />
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-5">
           <PriorityList view={view} items={priorities} />
-          <UpcomingSchedule meetings={scope.meetings} tasks={scope.tasks} canSchedule={can('schedule.manage')} />
-          {role.id === 'coordinator' && <MyExpenses expenses={scope.expenses} />}
-          {can('budget.view') && <BudgetCard budget={budgetSummary} title="Budget overview" subtitle="Current programme budget" />}
+          <UpcomingSchedule meetings={scope.meetings} maxItems={3} subtitle="Your next meetings and field visits" canSchedule={can('schedule.manage')} />
         </aside>
       </div>
-      <AccessPanel open={accessOpen} role={role} onClose={() => setAccessOpen(false)} />
     </div>
   )
 }

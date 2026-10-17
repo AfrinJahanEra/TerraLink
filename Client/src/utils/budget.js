@@ -64,3 +64,36 @@ export function calculateBudgetSummary(siteRows, tasks) {
     overBudgetCount: siteRows.filter((row) => row.overBudget).length,
   }
 }
+
+/**
+ * Why a task exists, when it came out of a review: a community report the manager verified, or a
+ * manager's site review. Returns null for work assigned directly.
+ */
+export function verifiedOrigin(task, reports) {
+  const report = task.reportId ? reports.find((item) => item.id === task.reportId) : null
+  if (report?.status === 'verified') {
+    const verified = report.history.findLast((entry) => entry.status === 'verified')
+    return { kind: 'report', label: `Verified report ${report.id}`, at: verified?.at ?? null, by: verified?.by ?? '' }
+  }
+  const fromReview = task.source === 'site_review' || task.activityHistory?.some((entry) => / analysis$/.test(entry.action))
+  return fromReview ? { kind: 'review', label: 'Site review', at: task.createdAt ?? null, by: task.assignedBy ?? '' } : null
+}
+
+/** Per lake, the tasks assigned after a verified review, with their estimate and approved spend. */
+export function buildVerifiedWorkRows(sites, tasks, reports, siteBudgets) {
+  return sites.map((site) => {
+    const jobs = tasks
+      .filter((task) => task.siteId === site.id && task.status !== 'cancelled')
+      .map((task) => ({ task, origin: verifiedOrigin(task, reports) }))
+      .filter((item) => item.origin)
+      .sort((a, b) => (b.task.assignedAt ?? b.task.createdAt ?? '').localeCompare(a.task.assignedAt ?? a.task.createdAt ?? ''))
+    return {
+      site,
+      planned: Number(siteBudgets[site.id] || 0),
+      jobs,
+      estimated: jobs.reduce((sum, { task }) => sum + Number(task.estimatedCost || 0), 0),
+      actual: jobs.reduce((sum, { task }) => sum + Number(task.actualCost || 0), 0),
+      pending: jobs.reduce((sum, { task }) => sum + Number(task.pendingCost || 0), 0),
+    }
+  }).filter((row) => row.jobs.length)
+}

@@ -1,40 +1,12 @@
 import { Ban, CircleCheck, LoaderCircle, OctagonAlert, Play, RotateCcw, Send } from 'lucide-react'
 import { useState } from 'react'
 import { can } from '../../constants/access'
+import { isTaskClosed } from '../../constants/status'
 import { storePhotos } from '../../services/photoStore'
 import { cn } from '../../utils/cn'
 import { formatDateTime, todayInDhaka } from '../../utils/reports'
 import { Button } from '../ui/Button'
 import { PhotoPicker } from '../ui/PhotoPicker'
-
-const STEPS = [
-  ['open', 'Open'],
-  ['in_progress', 'In progress'],
-  ['awaiting_verification', 'Awaiting verification'],
-  ['completed', 'Completed'],
-]
-
-function Stepper({ status }) {
-  // Blocked work sits at the in-progress stage; cancelled work is shown by its banner instead.
-  const index = STEPS.findIndex(([id]) => id === (status === 'blocked' ? 'in_progress' : status))
-  return (
-    <ol className="flex items-start" aria-label="Task stages">
-      {STEPS.map(([id, label], position) => {
-        const reached = index >= position && status !== 'cancelled'
-        return (
-          <li key={id} className="flex flex-1 flex-col items-center text-center">
-            <div className="flex w-full items-center">
-              <span className={cn('h-0.5 flex-1', position === 0 ? 'bg-transparent' : reached ? 'bg-brand-500' : 'bg-slate-200')} />
-              <span className={cn('grid size-6 shrink-0 place-items-center rounded-full border-2 text-[10px] font-bold', reached ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-slate-400')} aria-current={index === position ? 'step' : undefined}>{position + 1}</span>
-              <span className={cn('h-0.5 flex-1', position === STEPS.length - 1 ? 'bg-transparent' : index > position && status !== 'cancelled' ? 'bg-brand-500' : 'bg-slate-200')} />
-            </div>
-            <span className={cn('mt-1.5 px-1 text-[10px] leading-3', index === position && status !== 'cancelled' ? 'font-semibold text-slate-800' : 'text-slate-400')}>{label}</span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
 
 function ReasonForm({ label, placeholder, confirmLabel, onConfirm, onCancel, danger }) {
   const [reason, setReason] = useState('')
@@ -108,27 +80,27 @@ export function TaskWorkflow({ task, role, onSetStatus, onSubmitCompletion }) {
   const canMove = can(role.id, 'tasks.progress') && task.assignee === role.user.name
   const close = () => setPanel(null)
 
+  // Submitted work is handled by the review section; a closed task only offers the manager a reopen.
+  if (task.status === 'awaiting_verification' || (isTaskClosed(task) && !canCancel)) return null
+
   const run = (action) => {
     try { action(); close() } catch (error) { window.alert(error instanceof Error ? error.message : 'That change was not allowed.') }
   }
 
   return (
-    <section className="mt-6 border-t border-slate-100 pt-5" aria-label="Workflow">
-      <Stepper status={task.status} />
+    <section className="mt-5 border-t border-slate-100 pt-5" aria-label="Workflow">
+      {task.status === 'blocked' && <p className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><OctagonAlert size={15} className="mt-0.5 shrink-0" /><span><strong className="font-semibold">Blocked.</strong> {task.blockedReason}</span></p>}
+      {task.status === 'cancelled' && <p className="mb-4 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-700"><Ban size={15} className="mt-0.5 shrink-0" /><span><strong className="font-semibold">Cancelled.</strong> {task.cancelReason}</span></p>}
+      {task.lastReturn && task.status === 'in_progress' && <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><strong className="font-semibold">Returned for more work</strong> by {task.lastReturn.by} on {formatDateTime(task.lastReturn.at)}: {task.lastReturn.note}</p>}
 
-      {task.status === 'blocked' && <p className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><OctagonAlert size={15} className="mt-0.5 shrink-0" /><span><strong className="font-semibold">Blocked.</strong> {task.blockedReason}</span></p>}
-      {task.status === 'cancelled' && <p className="mt-4 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-700"><Ban size={15} className="mt-0.5 shrink-0" /><span><strong className="font-semibold">Cancelled.</strong> {task.cancelReason}</span></p>}
-      {task.lastReturn && task.status === 'in_progress' && <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><strong className="font-semibold">Returned for more work</strong> by {task.lastReturn.by} on {formatDateTime(task.lastReturn.at)}: {task.lastReturn.note}</p>}
-
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
         {canMove && task.status === 'open' && <Button type="button" className="min-h-9 px-3 text-xs" onClick={() => run(() => onSetStatus('in_progress'))}><Play size={14} />Start work</Button>}
         {canMove && task.status === 'in_progress' && <Button type="button" className="min-h-9 px-3 text-xs" onClick={() => setPanel('complete')}><CircleCheck size={14} />Submit completion evidence</Button>}
         {canMove && task.status === 'in_progress' && <Button type="button" variant="secondary" className="min-h-9 px-3 text-xs" onClick={() => setPanel('block')}><OctagonAlert size={14} />Report blocked</Button>}
         {canMove && task.status === 'blocked' && <Button type="button" className="min-h-9 px-3 text-xs" onClick={() => run(() => onSetStatus('in_progress'))}><Play size={14} />Resume work</Button>}
         {canCancel && (task.status === 'completed' || task.status === 'cancelled') && <Button type="button" variant="secondary" className="min-h-9 px-3 text-xs" onClick={() => run(() => onSetStatus('open'))}><RotateCcw size={14} />Reopen task</Button>}
         {canCancel && ['open', 'in_progress', 'blocked'].includes(task.status) && <Button type="button" variant="ghost" className="min-h-9 px-3 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => setPanel('cancel')}><Ban size={14} />Cancel task</Button>}
-        {task.status === 'awaiting_verification' && !isManager && <p className="text-xs leading-5 text-slate-500">Completion evidence was submitted. The project manager will review it.</p>}
-        {!canMove && ['open', 'in_progress', 'blocked'].includes(task.status) && <p className="text-xs leading-5 text-slate-500">{task.assignee} does the work and updates this task’s progress. You review the evidence once it is submitted.</p>}
+        {isManager && ['open', 'in_progress', 'blocked'].includes(task.status) && <p className="self-center text-xs leading-5 text-slate-500">Waiting for {task.assignee} to {task.status === 'open' ? 'start' : 'finish'} the work.</p>}
       </div>
 
       {panel === 'block' && <ReasonForm label="What is blocking the work?" placeholder="For example: access to the bank is closed until Sunday" confirmLabel="Mark as blocked" onCancel={close} onConfirm={(reason) => run(() => onSetStatus('blocked', reason))} />}

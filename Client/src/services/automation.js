@@ -6,7 +6,7 @@ import {
   getGoogleCalendarConfiguration,
   insertCalendarEvent,
 } from './calendar'
-import { emailTemplates, getEmailConfiguration } from './email'
+import { emailTemplates, resolveEmailSetup } from './email'
 import { getMeetingLink, getReportsLink, getTaskLink } from './links'
 
 function logId() {
@@ -178,14 +178,14 @@ export function recordCalendarDownload({ event, fields, record }) {
 }
 
 async function emailMany(record, { recipients, fields, send }) {
-  const config = getEmailConfiguration()
+  const config = await resolveEmailSetup()
   if (!config.configured) {
     const log = createLog({
       ...fields,
       recipient: recipients.map((member) => member.name).join(', '),
       channel: 'Email',
       status: 'Failed',
-      detail: `Email is not set up. Missing ${config.missing.join(', ')}.`,
+      detail: `Email is not set up. Add ${config.missing.join(', ')} to Client/.env and restart the app.`,
     })
     record(log)
     return [log]

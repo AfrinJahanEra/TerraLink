@@ -15,6 +15,40 @@ export function formatReportDate(value) {
   }).format(new Date(`${String(value).slice(0, 10)}T12:00:00`))
 }
 
+const byLatest = (pick) => (a, b) => (pick(b) ?? '').localeCompare(pick(a) ?? '')
+
+/**
+ * A lake the manager has approved as cleaned: its latest task closed as Resolved with after-photos.
+ * Before is the first photo of the community report behind the work (or the latest earlier report at
+ * the lake, else the satellite view); after is the last photo the field team added.
+ */
+export function findCleanup(site, tasks, communityReports) {
+  const task = tasks
+    .filter((item) => item.siteId === site.id && item.status === 'completed' && item.resolution?.outcome === 'resolved' && item.submissions?.at(-1)?.photos?.length)
+    .sort(byLatest((item) => item.completedAt ?? item.resolution.at))[0]
+  if (!task) return null
+  const submission = task.submissions.at(-1)
+  const finishedAt = task.completedAt ?? task.resolution.at
+  const source = communityReports.find((item) => item.id === task.reportId && item.photos?.length)
+    ?? communityReports
+      .filter((item) => item.siteId === site.id && item.status !== 'rejected' && item.photos?.length && item.createdAt <= finishedAt)
+      .sort(byLatest((item) => item.createdAt))[0]
+  return {
+    siteId: site.id,
+    siteName: site.name,
+    task: { id: task.id, title: task.title },
+    budget: Number(task.estimatedCost || 0),
+    actual: Number(task.actualCost || 0),
+    approvedBy: task.resolution.by,
+    approvedAt: task.resolution.at,
+    note: task.resolution.note || submission.summary,
+    before: source
+      ? { photoId: source.photos[0].id, caption: `${source.id}, reported ${formatReportDate(source.observedAt)}` }
+      : { imageUrl: site.image, caption: 'Satellite view; no community photo on record' },
+    after: { photoId: submission.photos.at(-1).id, caption: `${task.id}, finished ${formatReportDate(submission.completedOn ?? submission.submittedAt)} by ${submission.submittedBy}` },
+  }
+}
+
 export function buildReportData({ sites, tasks, decisions, expenses, siteBudgets, communityReports = [], siteId, from, to }) {
   const selectedSites = siteId === 'all' ? sites : sites.filter((site) => site.id === siteId)
   const selectedSiteIds = new Set(selectedSites.map((site) => site.id))
@@ -40,6 +74,10 @@ export function buildReportData({ sites, tasks, decisions, expenses, siteBudgets
     observations,
     reports: communityReports.filter((item) => selectedSiteIds.has(item.siteId) && inDateRange(item.observedAt, from, to)),
     tasks: selectedTasks,
+    taskTotals: selectedTasks.reduce((total, task) => ({
+      budget: total.budget + Number(task.estimatedCost || 0),
+      actual: total.actual + Number(task.actualCost || 0),
+    }), { budget: 0, actual: 0 }),
     expenses: selectedExpenses,
     budgetRows,
     totals: budgetRows.reduce((total, row) => ({
@@ -47,6 +85,7 @@ export function buildReportData({ sites, tasks, decisions, expenses, siteBudgets
       actual: total.actual + row.actual,
       variance: total.variance + row.remaining,
     }), { planned: 0, actual: 0, variance: 0 }),
+    cleanups: selectedSites.map((site) => findCleanup(site, tasks, communityReports)).filter(Boolean),
     sources: { imagery: 'Sentinel-2 L2A scenes, dated as shown', provider: METHOD.source, resolution: '10 m source imagery', measurement: METHOD.label },
   }
 }

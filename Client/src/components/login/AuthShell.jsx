@@ -1,4 +1,4 @@
-import { ArrowRight, Building2, Check, Eye, EyeOff, Lock, Mail, Map as MapIcon, UserRound } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Lock, Mail, Map as MapIcon, UserRound } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import wetlandImage from '../../assets/bangladesh-wetland-hero.png'
@@ -11,12 +11,6 @@ const TAGLINES = {
   coordinator: 'Field work and costs',
   user: 'Reports problems',
 }
-
-const FACTS = [
-  ['5', 'Dhaka water bodies'],
-  ['10 m', 'Sentinel-2 imagery'],
-  ['Photo', 'community reports'],
-]
 
 const DEMO_PASSWORD = 'demo-password'
 const emailPattern = /^\S+@\S+\.\S+$/
@@ -45,15 +39,14 @@ const inputClass = (hasIcon, hasError) => cn(
 )
 
 /**
- * Split-screen sign-in and registration layout. The left side explains what the chosen role can do;
- * the right side is the form. Demo details are filled in for the chosen role, and can be edited.
+ * Split-screen sign-in and registration layout: a wetland photo on the left, the form on the right.
+ * Demo details are filled in for the chosen role, and can be edited.
  */
 export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
   const isRegister = mode === 'register'
   const chosen = ROLES[role]
   const [email, setEmail] = useState(chosen.user.email)
   const [name, setName] = useState(chosen.user.name)
-  const [organisation, setOrganisation] = useState('')
   const [password, setPassword] = useState(DEMO_PASSWORD)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
@@ -77,39 +70,20 @@ export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
   }
 
   const title = isRegister ? 'Create your account' : 'Welcome back'
-  const subtitle = isRegister ? 'Choose how you will use TerraLink and register in a few seconds.' : 'Log in to continue. Choose how you want to use TerraLink.'
+  const subtitle = isRegister ? 'Choose your role to get started.' : 'Choose your role and log in.'
 
   return (
     <main className="grid min-h-svh bg-white lg:grid-cols-[1.05fr_1fr]">
       <aside className="relative hidden overflow-hidden bg-brand-950 text-white lg:flex lg:flex-col">
-        <img src={wetlandImage} alt="" className="absolute inset-0 size-full object-cover opacity-40" />
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-brand-950 via-brand-950/90 to-brand-900/60" />
-        <div className="relative flex flex-1 flex-col justify-between p-10 xl:p-14">
+        <img src={wetlandImage} alt="" className="absolute inset-0 size-full object-cover opacity-90" />
+        {/* A light wash keeps the photo visible; the darker bottom edge keeps the text readable. */}
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-brand-950/90 via-brand-950/35 to-brand-950/30" />
+        <div className="relative flex flex-1 flex-col justify-between px-10 pb-10 pt-5 xl:px-14 xl:pb-14 xl:pt-6">
           <Link to="/" className="w-fit" aria-label="TerraLink home"><Logo inverse /></Link>
 
           <div className="max-w-lg">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-300">From orbit to the field</p>
-            <h2 className="mt-4 text-[34px] font-bold leading-[1.12] tracking-tight xl:text-[40px]">One workspace from satellite signal to field report.</h2>
-            <p className="mt-4 max-w-md text-[15px] leading-7 text-white/70">Measure water bodies from dated Sentinel-2 imagery, verify what residents report, and turn it into costed, accountable work.</p>
-
-            <div className="mt-8 rounded-xl border border-white/15 bg-white/[0.06] p-5 backdrop-blur-sm" aria-live="polite">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-300">As {chosen.label}</p>
-              <ul className="mt-3 space-y-2.5">
-                {chosen.capabilities.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm leading-6 text-white/85">
-                    <span className="mt-1 grid size-4 shrink-0 place-items-center rounded-full bg-brand-400/25 text-brand-200"><Check size={11} strokeWidth={3} /></span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <div>
-            <dl className="grid grid-cols-3 gap-4 border-t border-white/15 pt-5">
-              {FACTS.map(([value, label]) => <div key={label}><dt className="text-xl font-bold tracking-tight">{value}</dt><dd className="mt-0.5 text-xs text-white/60">{label}</dd></div>)}
-            </dl>
-            <p className="mt-5 text-[11px] text-white/45">Interactive prototype. Sample data and no real authentication.</p>
+            <h2 className="text-[34px] font-bold leading-[1.12] tracking-tight drop-shadow-sm xl:text-[40px]">One workspace from satellite signal to field report.</h2>
+            <p className="mt-4 max-w-md text-[15px] leading-7 text-white/85">Monitor Dhaka's water bodies, verify what residents report, and turn it into accountable field work.</p>
           </div>
         </div>
       </aside>
@@ -119,11 +93,11 @@ export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
           <Link to="/" aria-label="TerraLink home"><Logo inverse /></Link>
           <Link to="/" className="text-xs font-semibold text-brand-100/80 hover:text-white">Back to home</Link>
         </div>
-        <div className="hidden justify-end px-10 pt-7 lg:flex">
+        <div className="hidden justify-end px-10 pt-5 lg:flex">
           <Link to="/" className="text-xs font-semibold text-slate-500 transition hover:text-slate-900">Back to home</Link>
         </div>
 
-        <div className="flex flex-1 items-center justify-center px-5 py-7 sm:px-8 lg:py-6">
+        <div className="flex flex-1 items-center justify-center px-5 py-7 sm:px-8 lg:items-start lg:pb-6 lg:pt-3">
           <div className="w-full max-w-[440px] rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8 lg:border-0 lg:p-0 lg:shadow-none">
             <h1 className="text-2xl font-bold tracking-tight text-slate-950">{title}</h1>
             <p className="mt-1.5 text-sm leading-6 text-slate-500">{subtitle}</p>
@@ -143,7 +117,7 @@ export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
                     )
                   })}
                 </div>
-                <p className="mt-2.5 text-[11px] leading-5 text-slate-500">{chosen.description} You will continue as <strong className="font-semibold text-slate-700">{chosen.user.name}</strong>, the demo identity for this role.</p>
+
               </fieldset>
 
               {isRegister && (
@@ -156,11 +130,6 @@ export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
                 <input id="auth-email" type="email" value={email} onChange={(event) => { edited.current.email = true; setEmail(event.target.value) }} autoComplete="email" placeholder="you@example.com" className={inputClass(true, errors.email)} />
               </Field>
 
-              {isRegister && (
-                <Field id="auth-org" label="Organisation" icon={Building2} hint="Optional">
-                  <input id="auth-org" value={organisation} onChange={(event) => setOrganisation(event.target.value)} autoComplete="organization" placeholder="NGO or project team" className={inputClass(true, false)} />
-                </Field>
-              )}
 
               <Field
                 id="auth-password"
@@ -177,7 +146,6 @@ export function AuthShell({ mode, role, onRoleChange, onSubmit, alternateTo }) {
               </button>
             </form>
 
-            <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2.5 text-[11px] leading-5 text-slate-500">Demo details are filled in for the role you choose. This prototype performs no real authentication, so any valid-looking email and password work.</p>
 
             <div className="mt-5 flex flex-col items-center gap-2.5 border-t border-slate-100 pt-5 text-sm text-slate-500">
               <p>{isRegister ? 'Already have an account?' : 'New to TerraLink?'} <Link to={alternateTo} className="font-semibold text-brand-700 transition hover:text-brand-800">{isRegister ? 'Log in' : 'Create an account'}</Link></p>

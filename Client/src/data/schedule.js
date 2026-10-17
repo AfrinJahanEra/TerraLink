@@ -25,19 +25,13 @@ export const DURATION_OPTIONS = [30, 45, 60, 90, 120, 180, 240]
 
 const seedMeetings = [
   {
-    id: 'MTG-005', title: 'Budget variance review', type: 'budget_review', date: '2026-10-20', startTime: '10:00', durationMinutes: 60, location: 'Finance room, project office', siteId: '', taskId: '', attendeeIds: ['member-nusrat', 'member-farzana', 'member-sadia'], agenda: 'Review site-level variance, pending commitments, and approval of further field costs.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-08T10:00:00.000Z',
+    id: 'MTG-001', title: 'Ramna Lake cleanup follow-up visit', type: 'field_visit', date: '2026-10-12', startTime: '09:30', durationMinutes: 120, location: 'Ramna Lake, north bank', siteId: 'ramna-lake', taskId: '', attendeeIds: ['member-nusrat', 'member-rahim'], agenda: 'Walk the cleaned stretch with the field team, check for new dumping and photograph the bank.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-17T09:00:00.000Z',
   },
   {
-    id: 'MTG-004', title: 'September monitoring report briefing', type: 'report_briefing', date: '2026-10-15', startTime: '15:00', durationMinutes: 45, location: 'Google Meet', siteId: '', taskId: '', attendeeIds: ['member-nusrat', 'member-sadia', 'member-farzana'], agenda: 'Walk through the September report, open decisions, and the cost summary before submission.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-07T12:30:00.000Z',
+    id: 'MTG-002', title: 'Weekly field team review', type: 'review_meeting', date: '2026-10-14', startTime: '11:00', durationMinutes: 60, location: 'Project office, Dhaka', siteId: '', taskId: '', attendeeIds: ['member-nusrat', 'member-rahim', 'member-maliha', 'member-imran'], agenda: 'Progress on open tasks, blocked work, and next week’s site visits.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-17T09:00:00.000Z',
   },
   {
-    id: 'MTG-003', title: 'Weekly review meeting', type: 'review_meeting', date: '2026-10-12', startTime: '11:00', durationMinutes: 60, location: 'Project office, Dhaka', siteId: '', taskId: '', attendeeIds: ['member-nusrat', 'member-rahim', 'member-sadia', 'member-tanvir'], agenda: 'Confirm Gulshan–Baridhara Lake and Hatirjheel Lake review decisions and assign follow-up checks.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-06T09:15:00.000Z',
-  },
-  {
-    id: 'MTG-002', title: 'Gulshan–Baridhara Lake field verification visit', type: 'field_visit', date: '2026-10-10', startTime: '09:30', durationMinutes: 180, location: 'Gulshan–Baridhara Lake, Gulshan', siteId: 'gulshan-baridhara-lake', taskId: 'TL-104', attendeeIds: ['member-rahim', 'member-tanvir'], agenda: 'Collect geotagged photographs along the eastern edge and record local observations.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-08T09:10:00.000Z',
-  },
-  {
-    id: 'MTG-001', title: 'Hatirjheel Lake boundary consultation', type: 'field_visit', date: '2026-10-07', startTime: '10:00', durationMinutes: 120, location: 'Hatirjheel Lake, Tejgaon–Rampura', siteId: 'hatirjheel', taskId: 'TL-099', attendeeIds: ['member-sadia', 'member-rahim'], agenda: 'Review boundary reference points with community representatives.', organizer: 'Nusrat Jahan', status: 'completed', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-02T11:45:00.000Z',
+    id: 'MTG-003', title: 'October budget review', type: 'budget_review', date: '2026-10-19', startTime: '15:00', durationMinutes: 60, location: 'Finance room, project office', siteId: '', taskId: '', attendeeIds: ['member-nusrat', 'member-farzana', 'member-sadia'], agenda: 'Review spending against each lake’s allocation and approve pending expenses.', organizer: 'Nusrat Jahan', status: 'scheduled', calendarStatus: 'none', calendarUrl: '', createdAt: '2026-10-17T09:00:00.000Z',
   },
 ]
 

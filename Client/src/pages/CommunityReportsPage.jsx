@@ -90,7 +90,6 @@ export function CommunityReportsPage() {
       <PageHeader
         eyebrow="Monitoring"
         description="Photo reports from residents. Check each one against its evidence, then verify or reject it. A verified report supports a field task but does not by itself prove harm to the water body."
-        actions={<Button as={Link} to="/report" variant="secondary" className="min-h-9 text-xs">Open public report form</Button>}
       />
 
       <SummaryStrip

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react'
+import { useCallback, useMemo } from 'react'
 import { isTaskClosed } from '../constants/status'
 import { can as roleCan } from '../constants/access'
 import { OPEN_REPORT_STATUSES } from '../constants/reports'
@@ -11,6 +11,7 @@ import { clearPhotos } from '../services/photoStore'
 import { describeComparison } from '../utils/observations'
 import { addDays, todayInDhaka } from '../utils/reports'
 import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useSharedWorkspace } from '../hooks/useSharedWorkspace'
 import {
   addEventToCalendar,
   automateBudgetOverrun,
@@ -63,28 +64,30 @@ function normalizeTask(task) {
   }
 }
 
-function readWorkspace() {
-  try {
-    const saved = window.localStorage.getItem(WORKSPACE_KEY)
-    if (!saved) return initialWorkspace
-    const parsed = JSON.parse(saved)
-    const savedTasks = Array.isArray(parsed.tasks) ? parsed.tasks.map(normalizeTask) : dashboardTasks
-    const missingDemoTasks = dashboardTasks.filter((task) => !savedTasks.some((savedTask) => savedTask.id === task.id))
-    return {
-      siteUpdates: parsed.siteUpdates ?? {},
-      decisions: parsed.decisions ?? {},
-      tasks: [...savedTasks, ...missingDemoTasks],
-      teamMembers: Array.isArray(parsed.teamMembers) ? parsed.teamMembers : initialTeamMembers,
-      siteBudgets: { ...initialSiteBudgets, ...parsed.siteBudgets },
-      expenses: Array.isArray(parsed.expenses) ? parsed.expenses : initialExpenses,
-      meetings: Array.isArray(parsed.meetings) ? parsed.meetings : initialMeetings,
-      communityReports: Array.isArray(parsed.communityReports) ? parsed.communityReports : initialCommunityReports,
-      comparisons: Array.isArray(parsed.comparisons) ? parsed.comparisons : [],
-      notificationLogs: Array.isArray(parsed.notificationLogs) ? parsed.notificationLogs : [],
-    }
-  } catch {
-    return initialWorkspace
+/** Fills a saved workspace (from this browser or the shared server copy) with defaults for anything missing. */
+function parseWorkspace(parsed) {
+  const savedTasks = Array.isArray(parsed.tasks) ? parsed.tasks.map(normalizeTask) : dashboardTasks
+  const missingDemoTasks = dashboardTasks.filter((task) => !savedTasks.some((savedTask) => savedTask.id === task.id))
+  return {
+    siteUpdates: parsed.siteUpdates ?? {},
+    decisions: parsed.decisions ?? {},
+    tasks: [...savedTasks, ...missingDemoTasks],
+    teamMembers: Array.isArray(parsed.teamMembers) ? parsed.teamMembers : initialTeamMembers,
+    siteBudgets: { ...initialSiteBudgets, ...parsed.siteBudgets },
+    expenses: Array.isArray(parsed.expenses) ? parsed.expenses : initialExpenses,
+    meetings: Array.isArray(parsed.meetings) ? parsed.meetings : initialMeetings,
+    communityReports: Array.isArray(parsed.communityReports) ? parsed.communityReports : initialCommunityReports,
+    comparisons: Array.isArray(parsed.comparisons) ? parsed.comparisons : [],
+    notificationLogs: Array.isArray(parsed.notificationLogs) ? parsed.notificationLogs : [],
   }
+}
+
+/** Two users can add a record at the same moment; the one replayed second takes the next free number. */
+function withFreeId(list, record) {
+  if (!list.some((item) => item.id === record.id)) return record
+  const [, prefix, digits] = String(record.id).match(/^(.*?)(\d+)$/) ?? [null, `${record.id}-`, '0']
+  const highest = list.reduce((max, item) => String(item.id).startsWith(prefix) ? Math.max(max, Number(String(item.id).slice(prefix.length)) || 0) : max, 0)
+  return { ...record, id: `${prefix}${String(highest + 1).padStart(digits.length, '0')}` }
 }
 
 function workspaceReducer(state, action) {
@@ -102,7 +105,7 @@ function workspaceReducer(state, action) {
         },
       }
     case 'ADD_TASK':
-      return { ...state, tasks: [normalizeTask(action.payload), ...state.tasks] }
+      return { ...state, tasks: [normalizeTask(withFreeId(state.tasks, action.payload)), ...state.tasks] }
     case 'UPDATE_TASK':
       return {
         ...state,
@@ -145,7 +148,7 @@ function workspaceReducer(state, action) {
     case 'ADD_EXPENSE':
       return {
         ...state,
-        expenses: [action.payload.expense, ...state.expenses],
+        expenses: [withFreeId(state.expenses, action.payload.expense), ...state.expenses],
         tasks: state.tasks.map((task) => task.id === action.payload.expense.taskId && action.payload.activity ? {
           ...task,
           activityHistory: [action.payload.activity, ...task.activityHistory],
@@ -170,7 +173,7 @@ function workspaceReducer(state, action) {
     case 'SAVE_COMPARISON':
       return { ...state, comparisons: [action.payload, ...state.comparisons] }
     case 'ADD_REPORT':
-      return { ...state, communityReports: [action.payload, ...state.communityReports] }
+      return { ...state, communityReports: [withFreeId(state.communityReports, action.payload), ...state.communityReports] }
     case 'REVIEW_REPORT':
       return {
         ...state,
@@ -200,7 +203,7 @@ function workspaceReducer(state, action) {
 
 export function AppProvider({ children }) {
   const [roleId, setRoleId] = useLocalStorage('terralink.role', null)
-  const [workspace, dispatch] = useReducer(workspaceReducer, undefined, readWorkspace)
+  const [workspace, dispatch] = useSharedWorkspace({ key: WORKSPACE_KEY, reducer: workspaceReducer, parse: parseWorkspace, initial: initialWorkspace })
   const role = useMemo(() => {
     const baseRole = roleId ? ROLES[roleId] : null
     if (!baseRole) return null
@@ -273,17 +276,9 @@ export function AppProvider({ children }) {
     [siteBudgetRows, tasks],
   )
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(WORKSPACE_KEY, JSON.stringify(workspace))
-    } catch {
-      // Persistence is optional when browser storage is unavailable.
-    }
-  }, [workspace])
-
   const recordNotification = useCallback((notification) => {
     dispatch({ type: 'ADD_NOTIFICATION_LOG', payload: notification })
-  }, [])
+  }, [dispatch, ])
 
   const manager = useMemo(
     () => workspace.teamMembers.find((member) => member.id === 'member-nusrat') ?? workspace.teamMembers.find((member) => member.role === 'Project Manager'),
@@ -299,7 +294,7 @@ export function AppProvider({ children }) {
   const recordDecision = useCallback((decision) => {
     guard('sites.decide', 'Only the project manager can record a review decision.')
     dispatch({ type: 'RECORD_DECISION', payload: decision })
-  }, [guard])
+  }, [dispatch, guard])
 
   const submitReport = useCallback((report) => {
     if (role?.id !== 'user') throw new Error('Sign in as a user to submit a report.')
@@ -315,13 +310,13 @@ export function AppProvider({ children }) {
     }
     dispatch({ type: 'ADD_REPORT', payload: created })
     return created
-  }, [role, workspace.communityReports])
+  }, [dispatch, role, workspace.communityReports])
 
   const reviewReport = useCallback((reportId, status, note) => {
     guard('community.review', 'Only the project manager can verify or reject a report.')
     const entry = { id: `h-${reportId}-${Date.now()}`, status, by: role?.user.name ?? 'Reviewer', at: new Date().toISOString(), note }
     dispatch({ type: 'REVIEW_REPORT', payload: { reportId, entry } })
-  }, [guard, role])
+  }, [dispatch, guard, role])
 
   const saveComparison = useCallback((comparison) => {
     guard('measurement.save', 'Only the project manager can record a measurement.')
@@ -329,7 +324,7 @@ export function AppProvider({ children }) {
     const saved = { ...comparison, id: `CMP-${String(highest + 1).padStart(3, '0')}`, savedAt: new Date().toISOString(), savedBy: role.user.name }
     dispatch({ type: 'SAVE_COMPARISON', payload: saved })
     return saved
-  }, [guard, role, workspace.comparisons])
+  }, [dispatch, guard, role, workspace.comparisons])
 
   /** Work is done in the field, so a task can only be given to a field coordinator. */
   const requireFieldCoordinator = useCallback((name) => {
@@ -339,14 +334,16 @@ export function AppProvider({ children }) {
   const createTask = useCallback((task) => {
     guard('tasks.create', 'Only the project manager can create and assign tasks.')
     requireFieldCoordinator(task.assignee)
-    const normalizedTask = normalizeTask(task)
+    const normalizedTask = normalizeTask({ ...task, assignedAt: task.assignedAt ?? task.createdAt ?? new Date().toISOString() })
     dispatch({ type: 'ADD_TASK', payload: normalizedTask })
     // Resolves with what the email and calendar follow-ups did, so the page can tell the person.
     return triggerTaskAssignment(normalizedTask)
-  }, [guard, requireFieldCoordinator, triggerTaskAssignment])
+  }, [dispatch, guard, requireFieldCoordinator, triggerTaskAssignment])
 
-  const updateTask = useCallback((taskId, changes, activity) => {
+  const updateTask = useCallback((taskId, nextChanges, activity) => {
     const currentTask = tasks.find((task) => task.id === taskId)
+    // A reassigned task counts as newly assigned, so it moves to the top of its column.
+    const changes = nextChanges.assignee && nextChanges.assignee !== currentTask?.assignee ? { ...nextChanges, assignedAt: new Date().toISOString() } : nextChanges
     dispatch({ type: 'UPDATE_TASK', payload: { taskId, changes, activity } })
     if (!currentTask) return
     const nextTask = normalizeTask({ ...currentTask, ...changes })
@@ -354,7 +351,7 @@ export function AppProvider({ children }) {
     if (currentTask.status !== 'awaiting_verification' && nextTask.status === 'awaiting_verification' && manager) {
       void automateTaskCompletion({ task: nextTask, manager, record: recordNotification })
     }
-  }, [manager, recordNotification, tasks, triggerTaskAssignment])
+  }, [dispatch, manager, recordNotification, tasks, triggerTaskAssignment])
 
   /** Assignment, deadline, estimate and notification choices. Only the project manager can change them. */
   const updateTaskPlan = useCallback((taskId, changes, activity) => {
@@ -369,17 +366,17 @@ export function AppProvider({ children }) {
     const task = tasks.find((item) => item.id === taskId)
     if (role?.id === 'coordinator' && task?.assignee !== role.user.name) throw new Error('You can only comment on your own tasks.')
     dispatch({ type: 'ADD_TASK_COMMENT', payload: { taskId, comment, activity } })
-  }, [guard, role, tasks])
+  }, [dispatch, guard, role, tasks])
 
   const addTeamMember = useCallback((member) => {
     guard('team.manage', 'Only the project manager can change team records.')
     dispatch({ type: 'ADD_TEAM_MEMBER', payload: member })
-  }, [guard])
+  }, [dispatch, guard])
 
   const updateTeamMember = useCallback((memberId, changes) => {
     guard('team.manage', 'Only the project manager can change team records.')
     dispatch({ type: 'UPDATE_TEAM_MEMBER', payload: { memberId, changes } })
-  }, [guard])
+  }, [dispatch, guard])
 
   const setSiteBudget = useCallback((siteId, amount) => {
     guard('budget.edit', 'Only the project manager can edit budget allocations.')
@@ -390,7 +387,7 @@ export function AppProvider({ children }) {
       const site = sites.find((item) => item.id === siteId)
       void automateBudgetOverrun({ site, planned: Number(amount), actual: row.actual, manager, record: recordNotification })
     }
-  }, [guard, manager, recordNotification, siteBudgetRows, sites, workspace.siteBudgets])
+  }, [dispatch, guard, manager, recordNotification, siteBudgetRows, sites, workspace.siteBudgets])
 
   /** Warns the manager the first time approved spending passes a site's planned allocation. */
   const warnIfOverBudget = useCallback((siteId, addedApproved) => {
@@ -420,7 +417,7 @@ export function AppProvider({ children }) {
     dispatch({ type: 'ADD_EXPENSE', payload: { expense: entry, activity } })
     if (approved) warnIfOverBudget(entry.siteId, Number(entry.amount || 0))
     return entry
-  }, [role, tasks, warnIfOverBudget])
+  }, [dispatch, role, tasks, warnIfOverBudget])
 
   const reviewExpense = useCallback((expenseId, decision, note = '') => {
     if (role?.id !== 'manager') throw new Error('Only the project manager can approve or reject expenses.')
@@ -437,7 +434,7 @@ export function AppProvider({ children }) {
       },
     })
     if (approved && expense.approvalStatus !== 'approved') warnIfOverBudget(expense.siteId, Number(expense.amount || 0))
-  }, [role, warnIfOverBudget, workspace.expenses])
+  }, [dispatch, role, warnIfOverBudget, workspace.expenses])
 
   /** Moves a task between workflow stages. Reasons are required to block or cancel. */
   const setTaskStatus = useCallback((taskId, status, reason = '') => {
@@ -482,12 +479,12 @@ export function AppProvider({ children }) {
   const createMeeting = useCallback((meeting) => {
     guard('schedule.manage', 'Only the project manager can schedule meetings.')
     dispatch({ type: 'ADD_MEETING', payload: meeting })
-  }, [guard])
+  }, [dispatch, guard])
 
   const updateMeeting = useCallback((meetingId, changes) => {
     guard('schedule.manage', 'Only the project manager can change meetings.')
     dispatch({ type: 'UPDATE_MEETING', payload: { meetingId, changes } })
-  }, [guard])
+  }, [dispatch, guard])
 
   const meetingAttendees = useCallback(
     (meeting) => workspace.teamMembers.filter((member) => meeting.attendeeIds?.includes(member.id)),
@@ -513,7 +510,7 @@ export function AppProvider({ children }) {
       }
       return result
     })
-  }, [buildMeetingEvent, recordNotification])
+  }, [dispatch, buildMeetingEvent, recordNotification])
 
   const downloadMeetingIcs = useCallback((meeting) => {
     const event = buildMeetingEvent(meeting)
@@ -522,7 +519,7 @@ export function AppProvider({ children }) {
     if (!meeting.calendarStatus || meeting.calendarStatus === 'none') {
       dispatch({ type: 'UPDATE_MEETING', payload: { meetingId: meeting.id, changes: { calendarStatus: 'ics' } } })
     }
-  }, [buildMeetingEvent, recordNotification])
+  }, [dispatch, buildMeetingEvent, recordNotification])
 
   const emailMeetingInvites = useCallback((meeting) => {
     const site = sites.find((item) => item.id === meeting.siteId)
@@ -570,7 +567,7 @@ export function AppProvider({ children }) {
     guard('workspace.reset', 'Only the project manager can reset the workspace.')
     dispatch({ type: 'RESET_DEMO' })
     void clearPhotos()
-  }, [guard])
+  }, [dispatch, guard])
   const signOut = useCallback(() => setRoleId(null), [setRoleId])
 
   const value = useMemo(

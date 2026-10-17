@@ -117,6 +117,7 @@ export function SiteDetailsPage() {
       due: formatTaskDate(task.dueDate),
       status: 'open',
       estimatedCost: 0,
+      source: 'site_review',
       assignedBy: role.user.name,
       notifications: { email: true, calendar: true },
       comments: [],

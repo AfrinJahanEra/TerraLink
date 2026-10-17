@@ -28,3 +28,6 @@ dist-ssr
 
 .vercel
 .env*
+
+# Shared workspace and uploaded photos from the local data server
+local-data

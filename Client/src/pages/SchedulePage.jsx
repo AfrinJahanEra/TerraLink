@@ -48,7 +48,7 @@ export function SchedulePage() {
   const [month, setMonth] = useState(() => startOfMonth(parseDateKey(today)))
   const [selectedDate, setSelectedDate] = useState(today)
   const [typeFilter, setTypeFilter] = useState('all')
-  const [showDeadlines, setShowDeadlines] = useState(true)
+  const [showDeadlines, setShowDeadlines] = useState(false)
   const [notice, showNotice] = useNotice(4000)
   const canManage = can('schedule.manage')
   const memberId = teamMembers.find((member) => member.name === role.user.name)?.id

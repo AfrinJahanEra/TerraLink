@@ -35,14 +35,17 @@ export function relativeDue(task) {
 
 const PRIORITY_RANK = { Urgent: 0, High: 1, Medium: 2, Low: 3 }
 
-export const TASK_SORTS = { due: 'Due date', priority: 'Priority', cost: 'Estimate', recent: 'Newest' }
+export const TASK_SORTS = { recent: 'Newest', due: 'Due date', priority: 'Priority', cost: 'Estimate' }
+
+/** When the task reached its current assignee; reassigning counts as a new assignment. */
+export const assignedTime = (task) => task.assignedAt ?? task.createdAt ?? ''
 
 export function sortTasks(tasks, sort) {
   const byDue = (a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? '')
   const list = [...tasks]
   if (sort === 'priority') return list.sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9) || byDue(a, b))
   if (sort === 'cost') return list.sort((a, b) => (Number(b.estimatedCost) || 0) - (Number(a.estimatedCost) || 0))
-  if (sort === 'recent') return list.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+  if (sort === 'recent') return list.sort((a, b) => assignedTime(b).localeCompare(assignedTime(a)) || byDue(a, b))
   return list.sort(byDue)
 }
 

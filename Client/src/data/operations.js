@@ -13,7 +13,7 @@ export const initialTeamMembers = [
     name: 'Rahim Uddin',
     initials: 'RU',
     role: 'Field Coordinator',
-    email: 'rahim@terralink.demo',
+    email: 'afrinera@iut-dhaka.edu',
     availability: 'limited',
     capacity: 4,
   },
@@ -55,11 +55,11 @@ export const initialTeamMembers = [
   },
   {
     id: 'member-farzana',
-    name: 'Farzana Islam',
-    initials: 'FI',
+    name: 'Afrin Jahan Era',
+    initials: 'AE',
     role: 'Finance Officer',
-    email: 'farzana@terralink.demo',
-    availability: 'leave',
+    email: 'afrinjahanera04@gmail.com',
+    availability: 'available',
     capacity: 3,
   },
 ]
@@ -73,6 +73,14 @@ export const initialSiteBudgets = {
 }
 
 export const initialExpenses = [
+  { id: 'EXP-S02', category: 'transport', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-04', amount: 2050, description: 'Inflow channel survey travel', taskId: 'TL-092', siteId: 'ramna-lake', receiptNote: 'Sample expense', createdBy: 'Maliha Rahman', createdAt: '2026-10-04T12:00:00.000Z' },
+  { id: 'EXP-S03', category: 'equipment', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-03', amount: 1750, description: 'Boundary marker paint and tags', taskId: 'TL-091', siteId: 'gol-talab', receiptNote: 'Sample expense', createdBy: 'Imran Hossain', createdAt: '2026-10-03T12:00:00.000Z' },
+  { id: 'EXP-S04', category: 'transport', approvalStatus: 'pending', reviewedBy: '', date: '2026-10-15', amount: 4100, description: 'Site visit and measuring kit hire', taskId: 'TL-105', siteId: 'hatirjheel', receiptNote: 'Sample expense', createdBy: 'Rahim Uddin', createdAt: '2026-10-15T12:00:00.000Z' },
+  { id: 'EXP-S05', category: 'labor', approvalStatus: 'pending', reviewedBy: '', date: '2026-10-15', amount: 2700, description: 'Field assistant for shoreline check', taskId: 'TL-094', siteId: 'dhanmondi-lake', receiptNote: 'Sample expense', createdBy: 'Rahim Uddin', createdAt: '2026-10-15T12:00:00.000Z' },
+  { id: 'EXP-S06', category: 'other', approvalStatus: 'pending', reviewedBy: '', date: '2026-10-15', amount: 3150, description: 'Sampling bottles and lab fee', taskId: 'TL-093', siteId: 'gulshan-baridhara-lake', receiptNote: 'Sample expense', createdBy: 'Imran Hossain', createdAt: '2026-10-15T12:00:00.000Z' },
+  { id: 'EXP-S07', category: 'transport', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-15', amount: 1400, description: 'Shoreline survey travel (first visit)', taskId: 'TL-098', siteId: 'ramna-lake', receiptNote: 'Sample expense', createdBy: 'Maliha Rahman', createdAt: '2026-10-15T12:00:00.000Z' },
+  { id: 'EXP-S08', category: 'labor', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-15', amount: 2600, description: 'Vegetation clearing, first day', taskId: 'TL-097', siteId: 'gulshan-baridhara-lake', receiptNote: 'Sample expense', createdBy: 'Rahim Uddin', createdAt: '2026-10-15T12:00:00.000Z' },
+  { id: 'EXP-S09', category: 'transport', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-15', amount: 1200, description: 'Attempted access visit', taskId: 'TL-096', siteId: 'hatirjheel', receiptNote: 'Sample expense', createdBy: 'Imran Hossain', createdAt: '2026-10-15T12:00:00.000Z' },
   { id: 'EXP-006', category: 'other', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-08', amount: 1800, description: 'Field evidence processing', taskId: 'TL-103', siteId: 'hatirjheel', receiptNote: 'Photograph labelling and local transport note', createdBy: 'Sadia Akter', createdAt: '2026-10-08T14:10:00.000Z' },
   { id: 'EXP-005', category: 'transport', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-05', amount: 2600, description: 'Routine Dhanmondi Lake inspection', taskId: 'TL-100', siteId: 'dhanmondi-lake', receiptNote: 'Field travel receipt verified', createdBy: 'Rahim Uddin', createdAt: '2026-10-05T16:30:00.000Z' },
   { id: 'EXP-004', category: 'other', approvalStatus: 'approved', reviewedBy: 'Nusrat Jahan', date: '2026-10-03', amount: 4200, description: 'Preliminary community survey', taskId: null, siteId: 'gulshan-baridhara-lake', receiptNote: 'Survey logistics summary on file', createdBy: 'Sadia Akter', createdAt: '2026-10-03T11:20:00.000Z' },

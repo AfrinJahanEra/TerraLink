@@ -5,7 +5,7 @@ import { useApp } from './useApp'
 
 /** Shared by the log in and register pages: role preselection and where to go afterwards. */
 export function useAuthRedirect() {
-  const { role, selectRole } = useApp()
+  const { selectRole } = useApp()
   const [searchParams] = useSearchParams()
   const next = safeNextPath(searchParams.get('next'))
   const requestedRole = ROLES[searchParams.get('role')] ? searchParams.get('role') : null
@@ -19,5 +19,5 @@ export function useAuthRedirect() {
     navigate(next ?? homePathFor(selected))
   }
 
-  return { selected, setSelected, finish, query, redirectTo: role ? (next ?? homePathFor(role.id)) : null }
+  return { selected, setSelected, finish, query }
 }

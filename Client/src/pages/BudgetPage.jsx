@@ -1,17 +1,62 @@
-import { AlertTriangle, ArrowRight, CalendarPlus, Landmark, Pencil, Plus, ReceiptText } from 'lucide-react'
+import { AlertTriangle, ArrowRight, BadgeCheck, CalendarPlus, Landmark, Pencil, Plus, ReceiptText } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BudgetAllocationModal } from '../components/budget/BudgetAllocationModal'
 import { PlannedActualChart } from '../components/budget/PlannedActualChart'
+import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Toast } from '../components/ui/Toast'
 import { useApp } from '../hooks/useApp'
 import { useNotice } from '../hooks/useNotice'
-import { buildSiteBudgetRows, buildTaskBudgetRows, calculateBudgetSummary } from '../utils/budget'
+import { TASK_STATUS } from '../constants/status'
+import { buildSiteBudgetRows, buildTaskBudgetRows, buildVerifiedWorkRows, calculateBudgetSummary } from '../utils/budget'
 import { cn } from '../utils/cn'
 import { formatBdt } from '../utils/currency'
+import { formatReportDate } from '../utils/report'
 import { buildScheduleLink } from '../utils/schedule'
+
+/** Lakes whose work was assigned after a verified community report or a manager's site review. */
+function VerifiedWork({ rows }) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-slate-100 px-5 py-3.5">
+        <BadgeCheck size={16} className="text-brand-700" />
+        <h2 className="text-sm font-semibold text-slate-900">Verified work by lake</h2>
+        <p className="text-[11px] text-slate-500">Tasks assigned after a verified community report or a site review, and what they cost against each lake's allocation.</p>
+      </header>
+      {rows.length ? (
+        <div className="divide-y divide-slate-100">
+          {rows.map((row) => (
+            <div key={row.site.id} className="px-5 py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <div><Link to={`/sites/${row.site.id}`} className="text-[13px] font-semibold text-slate-900 hover:text-brand-800">{row.site.name}</Link><span className="ml-2 text-[11px] text-slate-400">{row.site.location} · {row.jobs.length} verified {row.jobs.length === 1 ? 'job' : 'jobs'}</span></div>
+                <p className="text-[11px] tabular-nums text-slate-500">Estimated <strong className="font-semibold text-slate-800">{formatBdt(row.estimated)}</strong> · Spent <strong className="font-semibold text-slate-800">{formatBdt(row.actual)}</strong>{row.pending > 0 && <> · Awaiting approval <strong className="font-semibold text-slate-800">{formatBdt(row.pending)}</strong></>} · of {formatBdt(row.planned)} allocated</p>
+              </div>
+              <div className="mt-2.5 overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-xs">
+                  <thead className="text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="py-1.5 pr-3 font-semibold">Task</th><th className="py-1.5 pr-3 font-semibold">Verified by</th><th className="py-1.5 pr-3 font-semibold">Assigned to</th><th className="py-1.5 pr-3 font-semibold">Status</th><th className="py-1.5 pr-3 text-right font-semibold">Estimate</th><th className="py-1.5 text-right font-semibold">Spent</th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {row.jobs.map(({ task, origin }) => (
+                      <tr key={task.id}>
+                        <td className="py-2 pr-3"><Link to={`/tasks?task=${task.id}`} className="font-semibold text-slate-800 hover:text-brand-800">{task.id}</Link><span className="mt-0.5 block max-w-[280px] truncate text-[10.5px] text-slate-500">{task.title}</span></td>
+                        <td className="py-2 pr-3 text-slate-600">{origin.label}<span className="block text-[10.5px] text-slate-400">{[origin.by, origin.at && formatReportDate(origin.at)].filter(Boolean).join(' · ')}</span></td>
+                        <td className="py-2 pr-3 text-slate-600">{task.assignee}</td>
+                        <td className="py-2 pr-3"><Badge tone={TASK_STATUS[task.status]?.tone}>{TASK_STATUS[task.status]?.label}</Badge></td>
+                        <td className="py-2 pr-3 text-right tabular-nums text-slate-600">{formatBdt(task.estimatedCost)}</td>
+                        <td className="py-2 text-right font-semibold tabular-nums text-slate-700">{formatBdt(task.actualCost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : <p className="px-5 py-8 text-center text-xs text-slate-400">No work has been assigned from a verified report or site review yet.</p>}
+    </section>
+  )
+}
 
 function BudgetRows({ rows, groupBy, canPlan, onEdit }) {
   return (
@@ -20,7 +65,7 @@ function BudgetRows({ rows, groupBy, canPlan, onEdit }) {
       <div className="divide-y divide-slate-100">
         {rows.map((row) => (
           <div key={row.id} className={cn('grid min-w-[620px] grid-cols-[minmax(0,1fr)_110px_110px_110px_36px] items-center gap-3 px-5 py-3.5 text-xs', row.overBudget && 'bg-slate-50')}>
-            <div className="min-w-0"><p className="truncate font-semibold text-slate-800">{row.name}</p><p className="mt-0.5 truncate text-[10px] text-slate-400">{row.location}{groupBy === 'site' ? ` · ${row.taskCount} linked tasks` : ''}</p></div>
+            <div className="min-w-0"><p className="truncate font-semibold text-slate-800">{row.name}</p><p className="mt-0.5 truncate text-[10px] text-slate-400">{row.location}{groupBy === 'site' ? ` · ${row.taskCount} linked tasks${row.verifiedCount ? ` · ${row.verifiedCount} verified` : ''}` : ''}</p></div>
             <span className="text-right text-slate-600">{formatBdt(row.planned)}</span>
             <span className={cn('text-right font-semibold', row.overBudget ? 'text-amber-700' : 'text-slate-700')}>{formatBdt(row.actual)}</span>
             <span className={cn('text-right font-semibold', row.remaining < 0 ? 'text-amber-700' : 'text-slate-700')}>{formatBdt(row.remaining)}</span>
@@ -33,7 +78,7 @@ function BudgetRows({ rows, groupBy, canPlan, onEdit }) {
 }
 
 export function BudgetPage() {
-  const { can, sites, tasks, expenses, siteBudgets, setSiteBudget } = useApp()
+  const { can, sites, tasks, expenses, siteBudgets, communityReports, setSiteBudget } = useApp()
   const [groupBy, setGroupBy] = useState('site')
   const [editingBudget, setEditingBudget] = useState(null)
   const [notice, showNotice] = useNotice(3000)
@@ -44,7 +89,11 @@ export function BudgetPage() {
   const visibleTasks = tasks
   const visibleSites = sites
   const visibleExpenses = expenses
-  const siteRows = useMemo(() => buildSiteBudgetRows(visibleSites, visibleTasks, siteBudgets, visibleExpenses), [siteBudgets, visibleExpenses, visibleSites, visibleTasks])
+  const verifiedRows = useMemo(() => buildVerifiedWorkRows(visibleSites, visibleTasks, communityReports, siteBudgets), [communityReports, siteBudgets, visibleSites, visibleTasks])
+  const siteRows = useMemo(() => buildSiteBudgetRows(visibleSites, visibleTasks, siteBudgets, visibleExpenses).map((row) => ({
+    ...row,
+    verifiedCount: verifiedRows.find((item) => item.site.id === row.id)?.jobs.length ?? 0,
+  })), [siteBudgets, verifiedRows, visibleExpenses, visibleSites, visibleTasks])
   const taskRows = useMemo(() => buildTaskBudgetRows(visibleTasks), [visibleTasks])
   const rows = groupBy === 'site' ? siteRows : taskRows
   const summary = useMemo(() => calculateBudgetSummary(siteRows, visibleTasks), [siteRows, visibleTasks])
@@ -95,6 +144,8 @@ export function BudgetPage() {
       <div className="flex items-center justify-between gap-3"><div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 shadow-card"><button type="button" onClick={() => setGroupBy('site')} className={cn('h-8 rounded-md px-3 text-[11px] font-semibold', groupBy === 'site' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50')}>By site</button><button type="button" onClick={() => setGroupBy('task')} className={cn('h-8 rounded-md px-3 text-[11px] font-semibold', groupBy === 'task' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50')}>By task</button></div><p className="hidden items-center gap-1.5 text-[10px] text-slate-400 sm:flex"><Landmark size={13} className="text-slate-500" />Amounts shown in Bangladeshi taka</p></div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><PlannedActualChart rows={rows} /><BudgetRows rows={rows} groupBy={groupBy} canPlan={canPlan} onEdit={setEditingBudget} /></div>
+
+      <VerifiedWork rows={verifiedRows} />
 
       <BudgetAllocationModal key={editingBudget?.id ?? 'none'} open={Boolean(editingBudget)} site={editingBudget ? sites.find((site) => site.id === editingBudget.id) : null} planned={editingBudget?.planned} onClose={() => setEditingBudget(null)} onSave={saveAllocation} />
       <Toast message={notice} />

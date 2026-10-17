@@ -45,6 +45,12 @@ function ProtectedLayout() {
   return role.staff ? <AppLayout /> : <Navigate to={homePathFor(role.id)} replace />
 }
 
+/** The community pages belong to users and visitors; signed-in staff stay in their workspace. */
+function UserSideLayout() {
+  const { role } = useApp()
+  return role?.staff ? <Navigate to={homePathFor(role.id)} replace /> : <PublicLayout />
+}
+
 function AppRoutes() {
   const { role } = useApp()
 
@@ -54,7 +60,7 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route element={<PublicLayout />}>
+        <Route element={<UserSideLayout />}>
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/explore/:siteId" element={<PublicPondPage />} />
           <Route path="/report" element={<ReportIssuePage />} />

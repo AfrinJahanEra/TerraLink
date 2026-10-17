@@ -80,34 +80,34 @@
   .sidebar-items {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .sidebar-link {
-    height: 36px;
+    height: 34px;
   }
 
   @media (max-height: 900px) {
     .sidebar-group { margin-bottom: 15px; }
-    .sidebar-items { gap: 4px; }
-    .sidebar-link { height: 33px; }
+    .sidebar-items { gap: 6px; }
+    .sidebar-link { height: 31px; }
   }
 
   @media (max-height: 800px) {
-    .sidebar-group { margin-bottom: 11px; }
-    .sidebar-items { gap: 3px; }
-    .sidebar-link { height: 30px; }
+    .sidebar-group { margin-bottom: 12px; }
+    .sidebar-items { gap: 5px; }
+    .sidebar-link { height: 28px; }
   }
 
   @media (max-height: 720px) {
-    .sidebar-group { margin-bottom: 7px; }
-    .sidebar-items { gap: 2px; }
-    .sidebar-link { height: 27px; }
+    .sidebar-group { margin-bottom: 9px; }
+    .sidebar-items { gap: 4px; }
+    .sidebar-link { height: 26px; }
   }
 
   @media (max-height: 640px) {
-    .sidebar-group { margin-bottom: 4px; }
-    .sidebar-items { gap: 1px; }
+    .sidebar-group { margin-bottom: 6px; }
+    .sidebar-items { gap: 3px; }
     .sidebar-link { height: 23px; }
   }
 }

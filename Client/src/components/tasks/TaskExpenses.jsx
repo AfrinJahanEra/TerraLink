@@ -16,8 +16,11 @@ function Figure({ label, value, detail, tone }) {
   )
 }
 
-/** Planned cost against approved cost for one task, with every expense listed and reviewable. */
-export function TaskExpenses({ task, expenses, canAdd, canReview, onAdd, onReview }) {
+/**
+ * Planned cost against approved cost for one task, with every expense listed and reviewable.
+ * `simple` drops the variance figure for the field team, who only need their budget and what is approved.
+ */
+export function TaskExpenses({ task, expenses, canAdd, canReview, onAdd, onReview, simple = false }) {
   const [rejecting, setRejecting] = useState(null)
   const [reason, setReason] = useState('')
   const [lightbox, setLightbox] = useState('')
@@ -26,17 +29,17 @@ export function TaskExpenses({ task, expenses, canAdd, canReview, onAdd, onRevie
   const variance = task.actualCost - estimate
 
   return (
-    <section className="mt-6 border-t border-slate-100 pt-5" aria-label="Expenses">
+    <section className="mt-5 border-t border-slate-100 pt-5" aria-label="Expenses">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-800"><ReceiptText size={15} className="text-slate-500" />Costs and expenses</h3>
+        <h3 className="flex items-center gap-2 text-xs font-semibold text-slate-800"><ReceiptText size={15} className="text-slate-500" />{simple ? 'Expenses' : 'Costs and expenses'}</h3>
         {canAdd && <button type="button" onClick={onAdd} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"><Plus size={13} />Add expense</button>}
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Figure label="Estimated" value={formatBdt(estimate)} />
-        <Figure label="Approved actual" value={formatBdt(task.actualCost)} detail="Counts toward cost" />
-        <Figure label="Pending approval" value={formatBdt(task.pendingCost)} detail="Not counted yet" />
-        <Figure label="Variance" value={`${variance > 0 ? '+' : variance < 0 ? '−' : ''}${formatBdt(Math.abs(variance))}`} detail={variance > 0 ? 'Over the estimate' : variance < 0 ? 'Under the estimate' : 'On the estimate'} tone={variance > 0 ? 'rose' : undefined} />
+      <div className={`mt-3 grid gap-2 ${simple ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-4'}`}>
+        <Figure label={simple ? 'Budget' : 'Estimated'} value={formatBdt(estimate)} />
+        <Figure label="Approved" value={formatBdt(task.actualCost)} />
+        <Figure label="Waiting approval" value={formatBdt(task.pendingCost)} />
+        {!simple && <Figure label="Variance" value={`${variance > 0 ? '+' : variance < 0 ? '−' : ''}${formatBdt(Math.abs(variance))}`} detail={variance > 0 ? 'Over the estimate' : variance < 0 ? 'Under the estimate' : 'On the estimate'} tone={variance > 0 ? 'rose' : undefined} />}
       </div>
 
       <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-100">
@@ -48,7 +51,7 @@ export function TaskExpenses({ task, expenses, canAdd, canReview, onAdd, onRevie
               {photo && <span className="block size-10 shrink-0 overflow-hidden rounded-md bg-slate-100"><PhotoImage photoId={photo.id} alt="Receipt" onClick={setLightbox} /></span>}
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-slate-800">{expense.description}</p>
-                <p className="mt-0.5 text-[10px] text-slate-400">{expense.id} · {EXPENSE_CATEGORIES[expense.category] ?? 'Other'} · {expense.date} · {expense.createdBy}</p>
+                <p className="mt-0.5 text-[10px] text-slate-400">{EXPENSE_CATEGORIES[expense.category] ?? 'Other'} · {expense.date}{simple ? '' : ` · ${expense.createdBy}`}</p>
                 {expense.reviewNote && <p className="mt-1 text-[10px] leading-4 text-slate-500">{expense.reviewedBy}: {expense.reviewNote}</p>}
                 {canReview && expense.approvalStatus === 'pending' && (
                   rejecting === expense.id ? (

@@ -1,4 +1,6 @@
-import { buildReportTables, reportFilename } from '../utils/reportDocument'
+import { formatReportDate } from '../utils/report'
+import { bdt, buildReportTables, reportFilename } from '../utils/reportDocument'
+import { getPhoto } from './photoStore'
 
 const INK = [15, 23, 42]
 const MUTED = [100, 116, 139]
@@ -7,10 +9,30 @@ const BRAND_TINT = [239, 250, 249]
 const RULE = [226, 232, 240]
 const MARGIN = 42
 
+function toDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+/** A stored photo or an image URL as a data URL for jsPDF, or null when it cannot be read. */
+async function loadImage({ photoId, imageUrl }) {
+  try {
+    const blob = photoId ? await getPhoto(photoId) : await fetch(imageUrl).then((response) => response.ok ? response.blob() : null)
+    return blob ? await toDataUrl(blob) : null
+  } catch {
+    return null
+  }
+}
+
 /** Builds the report as an A4 PDF made of text and tables. The library is loaded only when a PDF is asked for. */
 export async function createReportPdf(report) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const tables = buildReportTables(report)
+  const cleanups = await Promise.all(report.cleanups.map(async (item) => ({ ...item, images: await Promise.all([loadImage(item.before), loadImage(item.after)]) })))
   const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true })
   const width = doc.internal.pageSize.getWidth()
   const height = doc.internal.pageSize.getHeight()
@@ -103,13 +125,52 @@ export async function createReportPdf(report) {
   heading('3', 'Community reports')
   table({ ...tables.community, empty: 'No community reports in this period.' })
 
-  heading('4', 'Tasks in reporting period')
-  table({ ...tables.tasks, columnStyles: { 0: { cellWidth: 170 } }, empty: 'No task deadlines fall inside this date range.' })
+  // Shown only when a lake has been approved as cleaned; later sections shift by one.
+  const shift = cleanups.length ? 1 : 0
+  if (shift) {
+    heading('4', 'Before and after cleanup')
+    const box = { width: (contentWidth - 12) / 2, height: 150 }
+    cleanups.forEach((item) => {
+      ensureSpace(box.height + 70)
+      doc.setFont('helvetica', 'bold').setFontSize(9.5).setTextColor(...INK).text(`${item.siteName} approved as cleaned`, MARGIN, y)
+      doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...MUTED)
+      doc.text(`${item.task.id} · ${item.task.title} · approved by ${item.approvedBy} on ${formatReportDate(item.approvedAt)} · budget ${bdt(item.budget)}, actual cost ${bdt(item.actual)}`, MARGIN, y + 12, { maxWidth: contentWidth })
+      y += 22
+      ;[['BEFORE', item.before, item.images[0]], ['AFTER', item.after, item.images[1]]].forEach(([label, photo, image], index) => {
+        const x = MARGIN + index * (box.width + 12)
+        doc.setFillColor(241, 245, 249).rect(x, y, box.width, box.height, 'F')
+        if (image) {
+          // Fit inside the box without stretching.
+          const { width, height: imageHeight } = doc.getImageProperties(image)
+          const scale = Math.min(box.width / width, box.height / imageHeight)
+          const w = width * scale
+          const h = imageHeight * scale
+          doc.addImage(image, x + (box.width - w) / 2, y + (box.height - h) / 2, w, h)
+        } else {
+          doc.setFontSize(8).setTextColor(...MUTED).text('Photo unavailable', x + box.width / 2, y + box.height / 2, { align: 'center' })
+        }
+        doc.setFillColor(...INK).rect(x + 6, y + 6, 40, 13, 'F')
+        doc.setFont('helvetica', 'bold').setFontSize(7).setTextColor(255, 255, 255).text(label, x + 26, y + 15, { align: 'center' })
+        doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...MUTED).text(photo.caption, x, y + box.height + 11, { maxWidth: box.width })
+      })
+      y += box.height + 22
+      if (item.note) {
+        const wrapped = doc.splitTextToSize(item.note, contentWidth)
+        ensureSpace(wrapped.length * 11)
+        doc.setFontSize(8.5).setTextColor(...INK).text(wrapped, MARGIN, y)
+        y += wrapped.length * 11
+      }
+      y += 14
+    })
+  }
 
-  heading('5', 'Costs and variance')
+  heading(String(4 + shift), 'Tasks in reporting period')
+  table({ head: tables.tasks.head, rows: tables.tasks.rows, foot: tables.tasks.total, columnStyles: { 0: { cellWidth: 170 }, 4: { halign: 'right' }, 5: { halign: 'right' } }, empty: 'No task deadlines fall inside this date range.' })
+
+  heading(String(5 + shift), 'Costs and variance')
   table({ head: tables.costs.head, rows: tables.costs.rows, foot: tables.costs.total, columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' } } })
 
-  heading('6', 'Limitations')
+  heading(String(6 + shift), 'Limitations')
   doc.setFont('helvetica', 'normal').setFontSize(8.8).setTextColor(...INK)
   tables.limitations.forEach((line) => {
     const wrapped = doc.splitTextToSize(line, contentWidth - 14)
@@ -120,7 +181,7 @@ export async function createReportPdf(report) {
   })
   y += 10
 
-  heading('7', 'Sources and attribution')
+  heading(String(7 + shift), 'Sources and attribution')
   tables.sources.forEach(([label, value]) => {
     const wrapped = doc.splitTextToSize(value, contentWidth - 96)
     ensureSpace(wrapped.length * 12 + 4)

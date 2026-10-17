@@ -1,8 +1,11 @@
 /**
- * Evidence photos live in IndexedDB, not in the workspace JSON, so reports keep only a photo id.
+ * Evidence photos live in IndexedDB and, when it runs, the local data server; the workspace JSON keeps only a photo id.
  * Images are downscaled in the browser before they are stored.
  */
+import { deleteUploadedPhotos, downloadPhoto, hasLocalServer, uploadPhoto } from './localServer'
+
 const DB_NAME = 'terralink.evidence'
+const UPLOAD_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const STORE = 'photos'
 const MAX_EDGE = 1280
 
@@ -29,9 +32,40 @@ async function withStore(mode, run) {
   })
 }
 
-export const putPhoto = (id, blob) => withStore('readwrite', (store) => store.put(blob, id))
-export const getPhoto = (id) => withStore('readonly', (store) => store.get(id))
-export const clearPhotos = () => withStore('readwrite', (store) => store.clear()).catch(() => undefined)
+const putLocal = (id, value) => withStore('readwrite', (store) => store.put(value, id))
+const getLocal = (id) => withStore('readonly', (store) => store.get(id))
+
+const isUploadable = (value) => value instanceof Blob && UPLOAD_TYPES.includes(value.type)
+
+/** Images are also uploaded to the local data server, so other users and browsers can see them. */
+export async function putPhoto(id, value) {
+  await putLocal(id, value)
+  if (isUploadable(value) && await hasLocalServer()) await uploadPhoto(id, value)
+}
+
+// Photos saved before the local data server existed are uploaded the first time this browser shows them.
+const backfilled = new Set()
+
+/** This browser's copy first; otherwise the uploaded file, which is then kept locally. */
+export async function getPhoto(id) {
+  const local = await getLocal(id).catch(() => undefined)
+  if (local) {
+    if (isUploadable(local) && !backfilled.has(id) && await hasLocalServer()) {
+      backfilled.add(id)
+      void uploadPhoto(id, local).catch(() => backfilled.delete(id))
+    }
+    return local
+  }
+  if (!await hasLocalServer()) return local
+  const blob = await downloadPhoto(id).catch(() => null)
+  if (blob) await putLocal(id, blob).catch(() => undefined)
+  return blob ?? undefined
+}
+
+export async function clearPhotos() {
+  await withStore('readwrite', (store) => store.clear()).catch(() => undefined)
+  if (await hasLocalServer()) await deleteUploadedPhotos()
+}
 
 /** Resize to a JPEG no larger than 1280 px on its longest edge. */
 export async function compressImage(file) {

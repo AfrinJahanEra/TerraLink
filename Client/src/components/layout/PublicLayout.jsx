@@ -63,7 +63,7 @@ export function PublicLayout() {
 
       <footer className="border-t border-slate-200 bg-white">
         <p className="mx-auto max-w-[1480px] px-3 py-3 text-[11px] leading-5 text-slate-500 sm:px-5">
-          Prototype. Reports are saved in this browser only and are evidence for a reviewer to check, not a finding about a water body. Outlines © OpenStreetMap contributors. Satellite tiles © Esri and its data partners.
+          Prototype. Reports are saved to the local TerraLink workspace and are evidence for a reviewer to check, not a finding about a water body. Outlines © OpenStreetMap contributors. Satellite tiles © Esri and its data partners.
         </p>
       </footer>
     </div>

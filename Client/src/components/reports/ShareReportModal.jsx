@@ -71,14 +71,15 @@ export function ShareReportModal({ open, title, subject, attachment, attachmentE
         </div>
 
         <div className="space-y-4 overflow-y-auto p-5">
-          {!emailSetup.configured && (
-            <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><AlertTriangle size={15} className="mt-0.5 shrink-0" /><span><strong className="font-semibold">Email is not set up.</strong> Add {emailSetup.missing.join(', ')} to the project’s environment file and restart the app. Until then nothing can be sent.</span></p>
+          {!emailSetup.configured && !emailSetup.checking && (
+            <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><AlertTriangle size={15} className="mt-0.5 shrink-0" /><span><strong className="font-semibold">Email is not set up.</strong> Add {emailSetup.missing.join(', ')} to Client/.env and restart the app. Until then nothing can be sent.</span></p>
           )}
 
           <div className="rounded-lg border border-slate-200 bg-slate-50/70 px-3.5 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">Email</p>
             <p className="mt-1 text-xs font-semibold text-slate-800">{subject}</p>
             <p className="mt-1 text-[11px] leading-5 text-slate-500">The message has a summary table and the full report attached as a PDF.</p>
+            {emailSetup.from && <p className="mt-1 text-[11px] text-slate-500">Sent from <span className="font-medium text-slate-700">{emailSetup.from}</span></p>}
             <p className={cn('mt-2 inline-flex items-center gap-1.5 rounded-md bg-white px-2 py-1 text-[11px] ring-1 ring-inset', attachmentError ? 'text-rose-700 ring-rose-200' : 'text-slate-600 ring-slate-200')}>
               {attachment ? <Paperclip size={12} className="text-slate-400" /> : attachmentError ? <AlertTriangle size={12} /> : <LoaderCircle size={12} className="animate-spin text-slate-400" />}
               {attachment ? `${attachment.filename} · ${Math.max(1, Math.round(attachment.bytes / 1024))} KB` : attachmentError || 'Preparing the PDF…'}

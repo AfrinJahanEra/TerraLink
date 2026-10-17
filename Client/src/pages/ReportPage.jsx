@@ -1,6 +1,6 @@
 import { addDays, todayInDhaka } from '../utils/reports'
 import { CalendarPlus, Download, Eye, FileText, LoaderCircle, RefreshCw, Send } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ReportPreview } from '../components/reports/ReportPreview'
 import { ShareReportModal } from '../components/reports/ShareReportModal'
@@ -9,7 +9,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Toast } from '../components/ui/Toast'
 import { useApp } from '../hooks/useApp'
 import { useNotice } from '../hooks/useNotice'
-import { getEmailConfiguration } from '../services/email'
+import { resolveEmailSetup } from '../services/email'
 import { getReportsLink } from '../services/links'
 import { downloadReportPdf, reportPdfAttachment } from '../services/reportPdf'
 import { buildReportData, buildReportEmailSummary } from '../utils/report'
@@ -31,6 +31,13 @@ export function ReportPage() {
   const [attachmentError, setAttachmentError] = useState('')
   const [downloading, setDownloading] = useState(false)
   const [notice, showNotice] = useNotice(3500)
+  const [emailSetup, setEmailSetup] = useState({ configured: false, checking: true, missing: [] })
+  useEffect(() => {
+    let active = true
+    resolveEmailSetup().then((setup) => { if (active) setEmailSetup(setup) })
+    return () => { active = false }
+  }, [])
+
   const canGenerate = Boolean(siteId && from && to && from <= to)
   const canSchedule = can('schedule.manage')
 
@@ -131,7 +138,7 @@ export function ReportPage() {
         subject={currentReport ? reportEmailSubject(currentReport) : ''}
         attachment={attachment}
         attachmentError={attachmentError}
-        emailSetup={getEmailConfiguration()}
+        emailSetup={emailSetup}
         members={teamMembers}
         currentUserEmail={role.user.email}
         onClose={() => setSendOpen(false)}

@@ -73,8 +73,16 @@ export function buildReportTables(report) {
       rows: report.reports.map((item) => [item.id, plain(siteName(item.siteId)), plain(REPORT_CATEGORIES[item.category]?.label), plain(formatReportDate(item.observedAt)), plain(REPORT_STATUS[item.status]?.label)]),
     },
     tasks: {
-      head: ['Task', 'Site', 'Assignee', 'Due', 'Status'],
-      rows: report.tasks.map((task) => [plain(`${task.id}  ${task.title}`), plain(task.site), plain(task.assignee), plain(formatReportDate(task.dueDate)), plain(TASK_STATUS[task.status]?.label ?? 'Unknown')]),
+      head: ['Task', 'Assignee', 'Due', 'Status', 'Budget', 'Actual cost'],
+      rows: report.tasks.map((task) => [
+        `${plain(`${task.id}  ${task.title}`)}\n${plain(task.site)}`,
+        plain(task.assignee),
+        plain(formatReportDate(task.dueDate)),
+        plain(TASK_STATUS[task.status]?.label ?? 'Unknown'),
+        bdt(task.estimatedCost),
+        task.pendingCost > 0 ? `${bdt(task.actualCost)}\n+${bdt(task.pendingCost)} pending` : bdt(task.actualCost),
+      ]),
+      total: ['Total', '', '', '', bdt(report.taskTotals.budget), bdt(report.taskTotals.actual)],
     },
     costs: {
       head: ['Site', 'Planned', 'Actual', 'Difference'],

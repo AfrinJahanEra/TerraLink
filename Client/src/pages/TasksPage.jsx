@@ -35,11 +35,11 @@ export function TasksPage() {
   const {
     role, can, scope, sites, tasks, expenses, teamMembers, notificationLogs, createTask, updateTaskPlan, addTaskComment,
     setTaskStatus, submitCompletion, reviewCompletion, addExpense, reviewExpense,
-    addTaskToCalendar, downloadTaskIcs, emailTaskReminder,
+    addTaskToCalendar, emailTaskReminder,
   } = useApp()
   const [searchParams, setSearchParams] = useSearchParams()
   const [view, setView] = useLocalStorage('terralink.tasks.view', 'board')
-  const [sort, setSort] = useLocalStorage('terralink.tasks.sort', 'due')
+  const [sort, setSort] = useLocalStorage('terralink.tasks.sort.v2', 'recent')
   const [filters, setFilters] = useState(() => ({ ...emptyFilters, site: !searchParams.get('new') && searchParams.get('site') ? searchParams.get('site') : 'all' }))
   const [notice, showNotice] = useNotice(3500)
   const [expenseFormOpen, setExpenseFormOpen] = useState(false)
@@ -74,7 +74,7 @@ export function TasksPage() {
   }, [filters.quick, scopedTasks])
 
   const filteredTasks = useMemo(
-    () => sortTasks(filters.status === 'all' ? pipelineTasks : pipelineTasks.filter((task) => task.status === filters.status), TASK_SORTS[sort] ? sort : 'due'),
+    () => sortTasks(filters.status === 'all' ? pipelineTasks : pipelineTasks.filter((task) => task.status === filters.status), TASK_SORTS[sort] ? sort : 'recent'),
     [filters.status, pipelineTasks, sort],
   )
 
@@ -211,7 +211,6 @@ export function TasksPage() {
           onAddExpense={() => setExpenseFormOpen(true)}
           onReviewExpense={guarded((expenseId, decision, note) => reviewExpense(expenseId, decision, note))}
           onAddToCalendar={() => addTaskToCalendar(selectedTask).then((result) => showNotice(describeCalendarResult(result)))}
-          onDownloadIcs={() => { downloadTaskIcs(selectedTask); showNotice('Deadline file downloaded for Outlook, Apple, or Google Calendar.') }}
           onEmailReminder={() => emailTaskReminder(selectedTask).then((log) => showNotice(describeEmailResult([log], 'reminder')))}
         />
       )}
