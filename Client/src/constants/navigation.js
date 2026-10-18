@@ -7,7 +7,6 @@ import {
   FileText,
   Layers,
   LayoutDashboard,
-  ListChecks,
   MapPinned,
   ReceiptText,
   Satellite,
@@ -25,9 +24,8 @@ export const NAV_ITEMS = [
     { label: 'Wetland map', path: '/map', icon: MapPinned, permission: 'map.view' },
     { label: 'Satellite comparison', path: '/compare/hatirjheel', matchPrefix: '/compare/', icon: Layers, permission: 'measurement.run' },
     { label: 'Site review', path: '/sites/gulshan-baridhara-lake', matchPrefix: '/sites/', icon: Satellite, permission: 'sites.review' },
-    { label: 'Sites register', path: '/sites', icon: TableProperties, permission: 'sites.register' },
     { label: 'Community reports', path: '/community', icon: Camera, permission: 'community.view' },
-    { label: 'Review queue', path: '/reviews', icon: ListChecks, permission: 'reviews.view' },
+    { label: 'Sites register', path: '/sites', icon: TableProperties, permission: 'sites.register' },
   ] },
   { label: 'Field operations', items: [
     { label: 'Tasks', path: '/tasks', icon: ClipboardCheck, permission: 'tasks.view' },

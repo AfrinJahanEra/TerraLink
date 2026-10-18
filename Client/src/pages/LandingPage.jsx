@@ -12,7 +12,7 @@ const OrbitScene = lazy(() =>
   import('../components/login/OrbitScene').then((module) => ({ default: module.OrbitScene })),
 )
 
-const FOOTER_MODULES = ['Wetland map and community photo reports', 'Satellite comparison and review queue', 'Tasks, schedule and budget', 'Reports and Bangla assistant']
+const FOOTER_MODULES = ['Wetland map and community photo reports', 'Satellite comparison and sites register', 'Tasks, schedule and budget', 'Reports and Bangla assistant']
 const HERO_SATELLITE = dashboardSites.find((site) => site.id === 'hatirjheel')?.image ?? pondAfter
 
 export function LandingPage() {

@@ -24,7 +24,6 @@ const ComparePage = page(() => import('./pages/ComparePage'), 'ComparePage')
 const MapPage = page(() => import('./pages/MapPage'), 'MapPage')
 const SitesRegisterPage = page(() => import('./pages/SitesRegisterPage'), 'SitesRegisterPage')
 const SiteDetailsPage = page(() => import('./pages/SiteDetailsPage'), 'SiteDetailsPage')
-const ReviewQueuePage = page(() => import('./pages/ReviewQueuePage'), 'ReviewQueuePage')
 const TasksPage = page(() => import('./pages/TasksPage'), 'TasksPage')
 const SchedulePage = page(() => import('./pages/SchedulePage'), 'SchedulePage')
 const BudgetPage = page(() => import('./pages/BudgetPage'), 'BudgetPage')
@@ -72,7 +71,7 @@ function AppRoutes() {
           <Route path="/sites" element={<SitesRegisterPage />} />
           <Route path="/sites/:siteId" element={<SiteDetailsPage />} />
           <Route path="/compare/:siteId" element={<ComparePage />} />
-          <Route path="/reviews" element={<ReviewQueuePage />} />
+          <Route path="/reviews" element={<Navigate to="/community" replace />} />
           <Route path="/community" element={<CommunityReportsPage />} />
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/actions" element={<ActionRedirect />} />

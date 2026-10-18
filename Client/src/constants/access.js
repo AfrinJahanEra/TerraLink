@@ -16,7 +16,6 @@ export const PERMISSIONS = {
   'sites.assigned': [COORDINATOR], // read-only record of a site they have a task at
   'measurement.run': [MANAGER],
   'community.view': [MANAGER],
-  'reviews.view': [MANAGER],
   'tasks.view': [MANAGER, COORDINATOR], // coordinator sees own tasks only
   'schedule.view': [MANAGER, COORDINATOR], // coordinator sees meetings they attend
   'budget.view': [MANAGER],
@@ -37,6 +36,7 @@ export const PERMISSIONS = {
   'expenses.approve': [MANAGER],
   'budget.edit': [MANAGER],
   'sites.decide': [MANAGER],
+  'sites.add': [MANAGER], // add a new water body to the register
   'measurement.save': [MANAGER],
   'community.review': [MANAGER],
   'schedule.manage': [MANAGER],

@@ -61,7 +61,7 @@ function SiteReports({ site, reports, onOpen }) {
     <section className="rounded-xl border border-slate-200 bg-white shadow-card">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div><h2 className="text-sm font-semibold text-slate-900">Community reports</h2><p className="mt-0.5 text-xs text-slate-400">Photo evidence submitted for {site.name}</p></div>
-        <Link to={`/community?site=${site.id}`} className="text-xs font-semibold text-brand-700 hover:text-brand-900">Open review queue</Link>
+        <Link to={`/community?site=${site.id}`} className="text-xs font-semibold text-brand-700 hover:text-brand-900">Open community reports</Link>
       </div>
       {reports.length ? (
         <div className="divide-y divide-slate-100">{reports.map((report) => <ReportCard key={report.id} report={report} siteName={site.name} onSelect={onOpen} />)}</div>

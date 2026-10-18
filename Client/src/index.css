@@ -303,6 +303,21 @@
   to { background-position: 200% 0; }
 }
 
+/* A slim scrollbar for panels that scroll inside a dialog */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(203 213 225) transparent;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(203 213 225);
+}
+
 /* AI waste detection: scanning line, grid and detection boxes over a report photo */
 .waste-scan-grid {
   background-image:

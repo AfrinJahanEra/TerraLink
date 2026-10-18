@@ -41,7 +41,7 @@ const FEATURES = [
   {
     id: 'review',
     icon: ClipboardCheck,
-    eyebrow: 'Review queue',
+    eyebrow: 'Site decisions',
     title: 'Turn every alert into an accountable decision',
     description: 'Project managers and GIS analysts review the same evidence, record a reason and preserve who made each decision.',
     capabilities: ['Confirm change or record no change', 'Request a field inspection with context', 'Preserve a complete decision trail'],

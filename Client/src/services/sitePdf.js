@@ -63,7 +63,7 @@ export async function createSitePdf({ site, earlier, later, result, wasteReport,
   const [earlierBlob, laterBlob] = await Promise.all([photoBlob(earlier.imageKeys?.rgb).then(sharpened), photoBlob(later.imageKeys?.rgb).then(sharpened)])
   const spot = wasteReport ? imageFraction(site, wasteReport.latitude, wasteReport.longitude) : null
   const [beforeImage, afterImage, earlierImage, laterImage, crop, aerialBlob, aerialMetadata] = await Promise.all([
-    reference ? loadImage({ url: reference.url }) : null,
+    reference ? loadImage(reference.photoId ? { photoId: reference.photoId } : { url: reference.url }) : null,
     marked ? loadImage({ photoId: marked.annotatedPhotoId }) : null,
     asDataUrl(earlierBlob),
     asDataUrl(laterBlob),
@@ -194,7 +194,7 @@ export async function createSitePdf({ site, earlier, later, result, wasteReport,
   // 2. Ground photos
   heading('2. Before and after on the ground', 230)
   imageRow([
-    { image: beforeImage, label: 'BEFORE', caption: reference ? `Baseline photo of ${site.name} in a clean state. ${referenceCredit(reference)}.` : 'No baseline photo is on file for this water body.' },
+    { image: beforeImage, label: 'BEFORE', caption: reference?.photoId ? `Baseline photo of ${site.name}, uploaded by ${reference.uploadedBy}.` : reference ? `Baseline photo of ${site.name} in a clean state. ${referenceCredit(reference)}.` : 'No baseline photo is on file for this water body.' },
     { image: afterImage, label: 'AFTER', border: afterImage ? GREEN : null, caption: wasteReport ? `${wasteReport.id}, seen on ${formatShortDate(wasteReport.observedAt)}. Green boxes are areas the AI marked as waste.` : 'No community report with detected waste yet.' },
   ], 170)
 

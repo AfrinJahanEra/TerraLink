@@ -47,8 +47,9 @@ export function GroundEvidencePanel({ site, earlier, result, report }) {
   const [lightbox, setLightbox] = useState('')
   const marked = wasteReport?.aiAnalysis.photos.find((photo) => photo.annotatedPhotoId)
   const after = usePhoto(marked?.annotatedPhotoId)
+  const uploadedBefore = usePhoto(reference?.photoId)
   const satelliteBefore = usePhoto(reference ? null : earlier.imageKeys?.rgb)
-  const beforeUrl = reference?.url ?? satelliteBefore.url
+  const beforeUrl = reference?.url ?? (reference?.photoId ? uploadedBefore.url : satelliteBefore.url)
   const analysis = wasteReport?.aiAnalysis
 
   return (
@@ -82,7 +83,7 @@ export function GroundEvidencePanel({ site, earlier, result, report }) {
               label="BEFORE · CLEAN"
               url={beforeUrl}
               alt={`${site.name} before`}
-              caption={reference ? <>Baseline photo of the lake in a clean state. <a href={reference.source} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-slate-800">{referenceCredit(reference)}</a></> : 'Earlier satellite image. No ground baseline photo is on file for this lake.'}
+              caption={reference?.photoId ? `Baseline photo uploaded by ${reference.uploadedBy} when the site was added.` : reference ? <>Baseline photo of the lake in a clean state. <a href={reference.source} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-slate-800">{referenceCredit(reference)}</a></> : 'Earlier satellite image. No ground baseline photo is on file for this lake.'}
               empty="No baseline image"
               onOpen={setLightbox}
             />

@@ -11,7 +11,12 @@ export function useSiteReport({ site, earlier, later, result }) {
   const [pdf, setPdf] = useState({ busy: false, error: '' })
   const wasteReports = useMemo(() => (site ? wasteReportsFor(communityReports, site.id) : []), [communityReports, site])
   const wasteReport = wasteReports[0] ?? null
-  const reference = site ? REFERENCE_PHOTOS[site.id] ?? null : null
+  // A pilot lake has a credited baseline photo; a site added later may have one uploaded with it.
+  const reference = useMemo(() => {
+    if (!site) return null
+    if (REFERENCE_PHOTOS[site.id]) return REFERENCE_PHOTOS[site.id]
+    return site.baselinePhotoId ? { photoId: site.baselinePhotoId, uploadedBy: site.createdBy } : null
+  }, [site])
   const summary = useMemo(() => (result ? buildSiteSummary({ earlier, later, result, wasteReport }) : null), [earlier, later, result, wasteReport])
 
   const downloadPdf = useCallback(async () => {

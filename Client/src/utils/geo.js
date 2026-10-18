@@ -46,3 +46,23 @@ export function imageFraction(site, latitude, longitude) {
   const y = (north - latitude) / (north - south)
   return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? { x, y } : null
 }
+
+/** Area, centre and bounding box of a drawn outline of [lat, lon] points. Area uses a local flat projection, accurate for a lake. */
+export function outlineGeometry(ring) {
+  const lats = ring.map(([lat]) => lat)
+  const lons = ring.map(([, lon]) => lon)
+  const lat0 = lats.reduce((sum, value) => sum + value, 0) / ring.length
+  const lon0 = lons.reduce((sum, value) => sum + value, 0) / ring.length
+  const kx = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  const ky = 110540
+  let twiceArea = 0
+  ring.forEach(([lat, lon], index) => {
+    const [nextLat, nextLon] = ring[(index + 1) % ring.length]
+    twiceArea += (lon - lon0) * kx * (nextLat - lat0) * ky - (nextLon - lon0) * kx * (lat - lat0) * ky
+  })
+  return {
+    areaHa: Math.abs(twiceArea) / 2 / 10000,
+    center: [Number(lat0.toFixed(6)), Number(lon0.toFixed(6))],
+    bbox: [Math.min(...lats), Math.min(...lons), Math.max(...lats), Math.max(...lons)],
+  }
+}

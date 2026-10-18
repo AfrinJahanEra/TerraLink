@@ -41,8 +41,8 @@ const VIEWS = {
     mapTitle: 'Wetland monitoring map',
     mapHint: 'Select an outline for its record or a diamond for a community report',
     priorityTitle: 'Needs your decision',
-    priorityLink: '/reviews',
-    priorityLinkLabel: 'Review queue',
+    priorityLink: '/sites?status=needs_review',
+    priorityLinkLabel: 'Sites to review',
   },
   coordinator: {
     mapTitle: 'Map of my sites',

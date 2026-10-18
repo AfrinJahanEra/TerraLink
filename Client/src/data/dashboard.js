@@ -16,11 +16,14 @@ function satelliteThumbnail(box) {
   return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=${box.join(',')}&bboxSR=4326&imageSR=4326&size=480,320&format=jpg&f=image`
 }
 
-function createSite(id, status, reviewNote) {
-  const body = waterBodies[id]
+/**
+ * A site record from an outline: `body` has id, name, location, areaHa, center, bbox ([south, west, north, east]),
+ * ring and holes. Extra fields (type, authority, who added it) are kept on the record.
+ */
+export function buildSite(body, { status, reviewNote, boundarySource, ...extra }) {
   const box = imageBox(body.bbox)
   return {
-    id,
+    id: body.id,
     name: body.name,
     location: body.location,
     area: `${body.areaHa.toFixed(1)} ha`,
@@ -28,13 +31,19 @@ function createSite(id, status, reviewNote) {
     status,
     coordinates: body.center,
     boundary: body.ring,
-    boundaryHoles: body.holes,
-    boundarySource: 'OpenStreetMap, ' + body.osm,
+    boundaryHoles: body.holes ?? [],
+    boundarySource,
     boundaryVerified: false,
     imageBox: box,
     image: satelliteThumbnail(box),
     reviewNote,
+    ...extra,
   }
+}
+
+function createSite(id, status, reviewNote) {
+  const body = waterBodies[id]
+  return buildSite(body, { status, reviewNote, boundarySource: 'OpenStreetMap, ' + body.osm })
 }
 
 export const dashboardSites = [

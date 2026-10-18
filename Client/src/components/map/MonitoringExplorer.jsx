@@ -103,7 +103,7 @@ function ReportPanel({ report, siteName, publicView, mine, canOpenQueue, onClose
         <button type="button" onClick={onClose} aria-label="Close report" className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900"><X size={16} /></button>
       </div>
       <ReportDetail report={report} siteName={siteName} ownReport={mine} />
-      {!publicView && canOpenQueue && <Link to={`/community?report=${report.id}`} className="mt-4 inline-flex text-xs font-semibold text-brand-700 hover:text-brand-900">Open in the review queue</Link>}
+      {!publicView && canOpenQueue && <Link to={`/community?report=${report.id}`} className="mt-4 inline-flex text-xs font-semibold text-brand-700 hover:text-brand-900">Open in community reports</Link>}
     </article>
   )
 }

@@ -87,7 +87,7 @@ export function TasksPage() {
   const filterMembers = useMemo(() => teamMembers.filter((member) => roleTasks.some((task) => task.assignee === member.name)), [roleTasks, teamMembers])
   const awaitingCount = roleTasks.filter((task) => task.status === 'awaiting_verification').length
   const needsReviewFromYou = can('tasks.review') ? awaitingCount : 0
-  const reviewCount = can('reviews.view') ? sites.filter((site) => site.status === 'needs_review').length : 0
+  const reviewCount = can('sites.register') ? sites.filter((site) => site.status === 'needs_review').length : 0
   const filtersActive = filters.search || filters.site !== 'all' || filters.status !== 'all' || filters.assignee !== 'all' || filters.quick !== 'all'
   const focusStatus = BOARD_STATUSES.includes(filters.status) ? filters.status : null
 
@@ -177,7 +177,7 @@ export function TasksPage() {
           {filtersActive && <span className="text-[10.5px] text-slate-500"><strong className="font-semibold text-slate-900">{filteredTasks.length}</strong> {filteredTasks.length === 1 ? 'task' : 'tasks'} shown</span>}
           {TASK_NOTES[role.id] && <span className="text-[10.5px] text-slate-400">{TASK_NOTES[role.id]}</span>}
           {reviewCount > 0 && (
-            <Link to="/reviews" className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-600 transition-colors hover:text-slate-900">
+            <Link to="/sites?status=needs_review" className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-600 transition-colors hover:text-slate-900">
               <ScanSearch size={11} className="text-slate-400" />{reviewCount} {reviewCount === 1 ? 'observation' : 'observations'} to review<ArrowRight size={11} />
             </Link>
           )}

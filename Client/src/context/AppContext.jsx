@@ -4,7 +4,7 @@ import { can as roleCan } from '../constants/access'
 import { OPEN_REPORT_STATUSES } from '../constants/reports'
 import { ROLES } from '../constants/roles'
 import { initialCommunityReports } from '../data/communityReports'
-import { dashboardSites, dashboardTasks } from '../data/dashboard'
+import { buildSite, dashboardSites, dashboardTasks } from '../data/dashboard'
 import { initialExpenses, initialSiteBudgets, initialTeamMembers } from '../data/operations'
 import { initialMeetings, MEETING_TYPES } from '../data/schedule'
 import { clearPhotos } from '../services/photoStore'
@@ -40,6 +40,14 @@ const initialWorkspace = {
   communityReports: initialCommunityReports,
   comparisons: [],
   notificationLogs: [],
+  // Water bodies added by the manager, on top of the five pilot sites.
+  customSites: [],
+}
+
+/** Turns a stored site record into the same shape as the pilot sites. */
+function toSite(record) {
+  const { body, ...details } = record
+  return buildSite(body, { ...details, custom: true })
 }
 
 function normalizeTask(task) {
@@ -79,6 +87,7 @@ function parseWorkspace(parsed) {
     communityReports: Array.isArray(parsed.communityReports) ? parsed.communityReports : initialCommunityReports,
     comparisons: Array.isArray(parsed.comparisons) ? parsed.comparisons : [],
     notificationLogs: Array.isArray(parsed.notificationLogs) ? parsed.notificationLogs : [],
+    customSites: Array.isArray(parsed.customSites) ? parsed.customSites : [],
   }
 }
 
@@ -104,6 +113,8 @@ function workspaceReducer(state, action) {
           [action.payload.siteId]: action.payload,
         },
       }
+    case 'ADD_SITE':
+      return { ...state, customSites: [...state.customSites, action.payload] }
     case 'ADD_TASK':
       return { ...state, tasks: [normalizeTask(withFreeId(state.tasks, action.payload)), ...state.tasks] }
     case 'UPDATE_TASK':
@@ -227,7 +238,7 @@ export function AppProvider({ children }) {
     }
   }), [tasks, workspace.communityReports])
   const sites = useMemo(
-    () => dashboardSites.map((site) => {
+    () => [...dashboardSites, ...workspace.customSites.map(toSite)].map((site) => {
       const openReports = communityReports.filter((report) => report.siteId === site.id && !report.resolved && OPEN_REPORT_STATUSES.includes(report.status)).length
       const measured = workspace.comparisons.find((item) => item.siteId === site.id) ?? null
       const merged = { ...site, ...workspace.siteUpdates[site.id], openReports, measured }
@@ -239,7 +250,7 @@ export function AppProvider({ children }) {
       }
       return !workspace.decisions[site.id] && openReports ? { ...merged, status: 'reported_issue' } : merged
     }),
-    [communityReports, workspace.comparisons, workspace.decisions, workspace.siteUpdates],
+    [communityReports, workspace.comparisons, workspace.customSites, workspace.decisions, workspace.siteUpdates],
   )
   const siteBudgetRows = useMemo(
     () => buildSiteBudgetRows(sites, tasks, workspace.siteBudgets, workspace.expenses),
@@ -295,6 +306,24 @@ export function AppProvider({ children }) {
     guard('sites.decide', 'Only the project manager can record a review decision.')
     dispatch({ type: 'RECORD_DECISION', payload: decision })
   }, [dispatch, guard])
+
+  /** Adds a water body from a drawn outline. Returns the new site id. */
+  const addSite = useCallback((site) => {
+    guard('sites.add', 'Only the project manager can add a water body.')
+    const base = site.body.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'site'
+    let id = base
+    for (let n = 2; sites.some((item) => item.id === id); n += 1) id = `${base}-${n}`
+    const record = {
+      ...site,
+      body: { ...site.body, id },
+      boundarySource: `Drawn in TerraLink by ${role.user.name}`,
+      createdAt: new Date().toISOString(),
+      createdBy: role.user.name,
+    }
+    dispatch({ type: 'ADD_SITE', payload: record })
+    if (Number(site.plannedBudget) > 0) dispatch({ type: 'SET_SITE_BUDGET', payload: { siteId: id, amount: Number(site.plannedBudget) } })
+    return id
+  }, [dispatch, guard, role, sites])
 
   const submitReport = useCallback((report) => {
     if (role?.id !== 'user') throw new Error('Sign in as a user to submit a report.')
@@ -593,6 +622,7 @@ export function AppProvider({ children }) {
       addNotificationLog: recordNotification,
       budgetSummary,
       recordDecision,
+      addSite,
       createTask,
       updateTaskPlan,
       addTaskComment,
@@ -615,7 +645,7 @@ export function AppProvider({ children }) {
       shareReport,
       resetDemo,
     }),
-    [can, scope, updateTaskPlan, addExpense, reviewExpense, setTaskStatus, submitCompletion, reviewCompletion, addMeetingToCalendar, addTaskComment, addTaskToCalendar, addTeamMember, budgetSummary, createMeeting, createTask, downloadMeetingIcs, downloadTaskIcs, emailMeetingInvites, emailTaskReminder, recordDecision, recordNotification, resetDemo, role, submitReport, reviewReport, saveComparison, setRoleId, setSiteBudget, shareReport, signOut, sites, updateMeeting, updateTeamMember, communityReports, tasks, workspace.comparisons, workspace.decisions, workspace.expenses, workspace.meetings, workspace.notificationLogs, workspace.siteBudgets, workspace.teamMembers],
+    [can, scope, addSite, updateTaskPlan, addExpense, reviewExpense, setTaskStatus, submitCompletion, reviewCompletion, addMeetingToCalendar, addTaskComment, addTaskToCalendar, addTeamMember, budgetSummary, createMeeting, createTask, downloadMeetingIcs, downloadTaskIcs, emailMeetingInvites, emailTaskReminder, recordDecision, recordNotification, resetDemo, role, submitReport, reviewReport, saveComparison, setRoleId, setSiteBudget, shareReport, signOut, sites, updateMeeting, updateTeamMember, communityReports, tasks, workspace.comparisons, workspace.decisions, workspace.expenses, workspace.meetings, workspace.notificationLogs, workspace.siteBudgets, workspace.teamMembers],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
