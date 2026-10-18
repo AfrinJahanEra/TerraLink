@@ -1,1 +1,0 @@
-import{t as e}from"./jsx-runtime-DKj5X9O4.js";import{n as t,t as n}from"./index-BZtbvUTj.js";var r=e();function i(){let{selected:e,setSelected:i,finish:a,query:o}=n();return(0,r.jsx)(t,{mode:`register`,role:e,onRoleChange:i,onSubmit:a,alternateTo:`/login${o}`})}export{i as RegisterPage};
