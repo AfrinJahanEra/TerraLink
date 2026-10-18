@@ -152,7 +152,7 @@ The user header is deliberately minimal: the logo returns to the map, and a sign
 
 The prototype has two staff roles and a **User** role for the community. There is no role switcher: to use a different role, sign out and sign in again (the account menu says so). The sign-in and register screens show what the chosen role can do, fill in demo details for it, validate the fields, and keep a `next` link so a visitor returns to the page they came from. The User role has no staff workspace and lands on the community pages.
 
-Each role sees only what it needs, and can do only what it is responsible for. The rules live in one table (`Client/src/constants/access.js`). The sidebar, the route guard, the data each page receives, every button, and the state functions all read from it, so the app does not merely hide a button: the action is refused too. A page outside your role shows a "not part of your role" notice and a link to what you can open, and **My role and access** (account menu or dashboard) lists what you can and cannot do.
+Each role sees only what it needs, and can do only what it is responsible for. The rules live in one table (`app/src/constants/access.js`). The sidebar, the route guard, the data each page receives, every button, and the state functions all read from it, so the app does not merely hide a button: the action is refused too. A page outside your role shows a "not part of your role" notice and a link to what you can open, and **My role and access** (account menu or dashboard) lists what you can and cannot do.
 
 **What each role is for**
 
@@ -307,7 +307,7 @@ Results are cached in the browser, so a repeated comparison takes seconds. The f
 ```
 Prototype/
 ├── README.md
-└── Client/
+└── app/
     ├── index.html
     ├── vite.config.js
     ├── vercel.json
@@ -353,7 +353,7 @@ Prototype/
 
 ```bash
 git clone <repository-url>
-cd Prototype/Client
+cd app
 npm install
 ```
 
@@ -377,7 +377,7 @@ The application works without any environment variables. Integrations then fall 
 
 ## 13. Environment Configuration
 
-Copy `.env.example` to `.env` inside `Client/` and fill in the values you need.
+Copy `.env.example` to `.env` inside `app/` and fill in the values you need.
 
 | Variable | Required for | Description |
 |---|---|---|
@@ -409,7 +409,7 @@ Never commit `.env` files. Only the `VITE_` variables listed above are exposed t
 
 The project deploys to Vercel as a static single-page application.
 
-1. Import the repository into Vercel and set the root directory to `Client`.
+1. Import the repository into Vercel and set the root directory to `app`.
 2. Framework preset: Vite. Build command: `npm run build`. Output directory: `dist`.
 3. Add the environment variables from section 13 in the Vercel project settings.
 4. Add the production domain to the Google OAuth Authorized JavaScript origins.
@@ -418,7 +418,7 @@ The project deploys to Vercel as a static single-page application.
 
 ## 15. Demonstration Guide
 
-A timed 5 to 7 minute walkthrough is available in [`Client/docs/DEMO_SCRIPT.md`](Client/docs/DEMO_SCRIPT.md). Recommended path:
+A timed 5 to 7 minute walkthrough is available in [`app/docs/DEMO_SCRIPT.md`](app/docs/DEMO_SCRIPT.md). Recommended path:
 
 1. **Dashboard:** priority site, KPIs and upcoming schedule.
 2. **Public explorer and report form:** open `/explore` while signed out, select Dhanmondi Lake, choose **Report a problem here**, sign in as a User, then submit a photo report and follow it under **My reports**.
