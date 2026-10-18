@@ -34,7 +34,22 @@ export function relativeDue(task) {
   return `${-days} ${days === -1 ? 'day' : 'days'} overdue`
 }
 
-const PRIORITY_RANK = { Urgent: 0, High: 1, Medium: 2, Low: 3 }
+/**
+ * The report whose photo is the "before" for a task: the report it was opened from, or, for work that came out of a
+ * site review and has no report, the newest photographed report on the same lake from before the work was submitted.
+ * Rejected reports are never used as evidence.
+ */
+export function beforeReportFor(task, reports) {
+  const linked = task.reportId ? reports.find((report) => report.id === task.reportId) ?? null : null
+  if (linked?.photos?.length) return linked
+  const cutoff = task.submissions?.at(-1)?.submittedAt
+  const onSite = reports
+    .filter((report) => report.siteId === task.siteId && report.status !== 'rejected' && report.photos?.length && (!cutoff || report.createdAt <= cutoff))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  return onSite[0] ?? linked
+}
+
+const PRIORITY_RANK ={ Urgent: 0, High: 1, Medium: 2, Low: 3 }
 
 export const TASK_SORTS = { recent: 'Newest', due: 'Due date', priority: 'Priority', cost: 'Budget' }
 

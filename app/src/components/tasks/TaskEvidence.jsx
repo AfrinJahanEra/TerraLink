@@ -15,7 +15,7 @@ function Gallery({ photos, alt, onOpen, emptyText }) {
 }
 
 /**
- * The original report photos next to the latest completion photos, so a reviewer sees what changed.
+ * The report photos (see `beforeReportFor`) next to the latest completion photos, so a reviewer sees what changed.
  * Before anything is submitted it shows only the problem photo, which is what the field team needs.
  * `detailed` adds earlier submissions for the manager.
  */
@@ -26,7 +26,9 @@ export function TaskEvidence({ task, report, detailed = false }) {
   const reportPhotos = report?.photos ?? []
   if (!latest && !reportPhotos.length) return null
   const shown = detailed ? submissions.slice().reverse() : latest ? [latest] : []
-  const reportCaption = report && `${report.id} · ${REPORT_CATEGORIES[report.category]?.label ?? 'Report'} · seen ${formatShortDate(report.observedAt)}`
+  // A task from a site review has no report of its own; the lake's latest report photo stands in as the "before".
+  const borrowed = report && report.id !== task.reportId
+  const reportCaption = report && `${report.id} · ${REPORT_CATEGORIES[report.category]?.label ?? 'Report'} · seen ${formatShortDate(report.observedAt)}${borrowed ? ' · latest report on this lake' : ''}`
 
   return (
     <section className="mt-5 border-t border-slate-100 pt-5" aria-label="Evidence">
@@ -35,7 +37,7 @@ export function TaskEvidence({ task, report, detailed = false }) {
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">Before</p>
-            <div className="mt-2"><Gallery photos={reportPhotos} alt="Report photo" onOpen={setLightbox} emptyText={report ? 'The report has no photo.' : 'No report is linked to this task.'} /></div>
+            <div className="mt-2"><Gallery photos={reportPhotos} alt="Report photo" onOpen={setLightbox} emptyText={report ? 'The report has no photo.' : 'No report with a photo exists for this lake yet.'} /></div>
             {reportCaption && <p className="mt-2 text-[10px] leading-4 text-slate-400">{reportCaption}</p>}
           </div>
           <div>

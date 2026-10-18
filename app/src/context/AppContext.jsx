@@ -21,7 +21,7 @@ import {
 import { buildSiteBudgetRows, calculateBudgetSummary } from '../utils/budget'
 import { formatBdt } from '../utils/currency'
 import { deriveReports, deriveSites, deriveTasks } from '../utils/siteState'
-import { createActivity, isFieldCoordinator } from '../utils/tasks'
+import { beforeReportFor, createActivity, isFieldCoordinator } from '../utils/tasks'
 import { AppContext } from './app-context'
 
 const WORKSPACE_KEY = 'terralink.workspace.v3'
@@ -244,17 +244,20 @@ export function AppProvider({ children }) {
   const scope = useMemo(() => {
     if (!role?.staff) return null
     if (role.id !== 'coordinator') {
-      return { tasks, sites, expenses: workspace.expenses, meetings: workspace.meetings, communityReports, siteIds: new Set(sites.map((site) => site.id)) }
+      return { tasks, sites, expenses: workspace.expenses, meetings: workspace.meetings, communityReports, evidenceReports: communityReports, siteIds: new Set(sites.map((site) => site.id)) }
     }
     const mine = tasks.filter((task) => task.assignee === role.user.name)
     const siteIds = new Set(mine.map((task) => task.siteId))
     const reportIds = new Set(mine.map((task) => task.reportId).filter(Boolean))
+    // The "before" photo of a task can come from a report on the same lake that the task is not linked to; only that report is shared.
+    const evidenceIds = new Set(mine.map((task) => beforeReportFor(task, communityReports)?.id).filter(Boolean))
     return {
       tasks: mine,
       sites: sites.filter((site) => siteIds.has(site.id)),
       expenses: workspace.expenses.filter((expense) => mine.some((task) => task.id === expense.taskId)),
       meetings: workspace.meetings.filter((meeting) => meeting.attendeeIds.includes(memberId)),
       communityReports: communityReports.filter((report) => reportIds.has(report.id)),
+      evidenceReports: communityReports.filter((report) => evidenceIds.has(report.id)),
       siteIds,
     }
   }, [communityReports, memberId, role, sites, tasks, workspace.expenses, workspace.meetings])

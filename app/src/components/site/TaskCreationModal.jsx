@@ -8,6 +8,7 @@ export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
   const [assignee, setAssignee] = useState(members[0]?.name ?? '')
   const [dueDate, setDueDate] = useState(addDays(todayInDhaka(), 5))
   const [priority, setPriority] = useState('High')
+  const [estimatedCost, setEstimatedCost] = useState('')
   const [notes, setNotes] = useState('Visit the site, capture geotagged evidence, and report field conditions.')
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
   function submitTask(event) {
     event.preventDefault()
     const selectedAssignee = members.find((item) => item.name === assignee)
-    onCreate({ title: title.trim(), assignee, initials: selectedAssignee.initials, dueDate, priority, notes: notes.trim() })
+    onCreate({ title: title.trim(), assignee, initials: selectedAssignee.initials, dueDate, priority, estimatedCost: Number(estimatedCost), notes: notes.trim() })
   }
 
   return (
@@ -44,7 +45,10 @@ export function TaskCreationModal({ open, site, members, onClose, onCreate }) {
             <label className="block"><span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><CalendarDays size={14} className="text-slate-500" />Due date</span><input type="date" value={dueDate} min={todayInDhaka()} onChange={(event) => setDueDate(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
           </div>
 
-          <label className="block"><span className="text-xs font-semibold text-slate-700">Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400"><option>High</option><option>Medium</option><option>Low</option></select></label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block"><span className="text-xs font-semibold text-slate-700">Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-brand-400"><option>High</option><option>Medium</option><option>Low</option></select></label>
+            <label className="block"><span className="text-xs font-semibold text-slate-700">Budget given (BDT)</span><input type="number" min="0" step="100" value={estimatedCost} onChange={(event) => setEstimatedCost(event.target.value)} required className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs text-slate-700 outline-none focus:border-brand-400" /></label>
+          </div>
           <label className="block"><span className="text-xs font-semibold text-slate-700">Field instructions</span><textarea value={notes} onChange={(event) => setNotes(event.target.value)} required rows={3} className="mt-1.5 w-full resize-none rounded-lg border border-slate-200 px-3 py-2.5 text-xs leading-5 text-slate-700 outline-none focus:border-brand-400" /></label>
 
           <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">

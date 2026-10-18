@@ -1,3 +1,5 @@
+import { getAppUrl } from './links'
+
 const GOOGLE_SCRIPT_ID = 'google-identity-services'
 const TOKEN_KEY = 'terralink.google.calendar.token'
 const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
@@ -109,7 +111,7 @@ function eventWindow(event) {
 }
 
 function recordUrl(path) {
-  return `${window.location.origin}${path}`
+  return `${getAppUrl()}${path}`
 }
 
 export function taskToCalendarEvent(task) {

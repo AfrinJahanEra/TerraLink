@@ -1,7 +1,7 @@
 import { connectGoogleCalendar, getGoogleCalendarConfiguration, insertCalendarEvent } from './calendar'
 import { emailTemplates, resolveEmailSetup, sendEmailNotification } from './email'
 import { meetingEmail, taskAssignmentEmail, taskReminderEmail } from './taskEmails'
-import { getReportsLink, getTaskLink } from './links'
+import { getBudgetLink, getReportsLink, getTaskLink } from './links'
 
 function logId() {
   return `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -84,7 +84,7 @@ export async function automateBudgetOverrun({ site, planned, actual, manager, re
     recipient: `${manager.name} · ${manager.email}`,
     channel: 'Email',
     message: `Budget overrun: ${site.name} reached ৳${Number(actual).toLocaleString('en-US')}`,
-    actionUrl: `${window.location.origin}/budget`,
+    actionUrl: getBudgetLink(),
     source: 'Finance',
   }, () => emailTemplates.overBudget({
     toName: manager.name,
@@ -92,7 +92,7 @@ export async function automateBudgetOverrun({ site, planned, actual, manager, re
     site,
     planned,
     actual,
-    actionUrl: `${window.location.origin}/budget`,
+    actionUrl: getBudgetLink(),
   }))
 }
 

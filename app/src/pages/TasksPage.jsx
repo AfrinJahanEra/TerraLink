@@ -22,7 +22,7 @@ import { useNotice } from '../hooks/useNotice'
 import { cn } from '../utils/cn'
 import { describeEmailResult, describeTaskFollowUp } from '../utils/communications'
 import { formatBdt } from '../utils/currency'
-import { assignableMembers, createActivity, formatTaskDate, isTaskOverdue, sortTasks, TASK_QUICK_VIEWS, TASK_SORTS } from '../utils/tasks'
+import { assignableMembers, beforeReportFor, createActivity, formatTaskDate, isTaskOverdue, sortTasks, TASK_QUICK_VIEWS, TASK_SORTS } from '../utils/tasks'
 
 const emptyFilters = { search: '', site: 'all', status: 'all', assignee: 'all', quick: 'all' }
 
@@ -212,7 +212,7 @@ export function TasksPage() {
         <TaskDetailDrawer
           key={selectedTask.id}
           task={selectedTask}
-          report={scope.communityReports.find((item) => item.id === selectedTask.reportId) ?? null}
+          report={beforeReportFor(selectedTask, scope.evidenceReports)}
           expenses={scope.expenses}
           role={role}
           members={assignees}

@@ -80,7 +80,7 @@ export function TaskExpenses({ task, expenses, canAdd, canReview, canAddBudget =
 
       <div className="mt-3 rounded-lg border border-slate-200">
         <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 sm:grid-cols-4 sm:divide-y-0">
-          <Figure label="Budget given" value={formatBdt(budget)} detail={task.extraBudget ? `incl. ${formatBdt(task.extraBudget)} extra` : simple ? '' : 'For this task'} />
+          <Figure label="Budget given" value={budget ? formatBdt(budget) : 'Not set'} detail={!budget ? (canAddBudget ? 'Use Add budget' : 'Not given yet') : task.extraBudget ? `incl. ${formatBdt(task.extraBudget)} extra` : simple ? '' : 'For this task'} />
           <Figure label="Spent" value={formatBdt(spent)} detail={`${used}% of budget`} />
           <Figure label="More needed" value={formatBdt(moreNeeded)} detail={requests.length ? `${requests.length} ${requests.length === 1 ? 'request' : 'requests'} waiting for approval` : 'Nothing requested'} />
           <Figure label="Variance" value={`${variance > 0 ? '+' : variance < 0 ? '−' : ''}${formatBdt(Math.abs(variance))}`} detail={variance > 0 ? 'Over budget' : variance < 0 ? `${formatBdt(-variance)} left` : 'On budget'} strong={variance > 0} />

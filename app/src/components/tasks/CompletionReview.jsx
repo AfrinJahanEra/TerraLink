@@ -1,6 +1,7 @@
 import { CircleCheck, RotateCcw, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { TASK_RESOLUTION } from '../../constants/actions'
+import { taskBudget } from '../../utils/budget'
 import { cn } from '../../utils/cn'
 import { formatBdt } from '../../utils/currency'
 import { formatDateTime } from '../../utils/reports'
@@ -11,6 +12,21 @@ import { AiCleanupCheck } from './AiCleanupCheck'
 
 /** The manager's decision on submitted evidence, or the recorded outcome once a task is completed. */
 const OUTCOME_FOR_VERDICT = { cleared: 'resolved', partly_cleared: 'partial', not_cleared: 'not_resolved' }
+
+/** Money given, spent and left on the task, so the reviewer sees the cost next to the evidence. */
+function CostLine({ task }) {
+  const budget = taskBudget(task)
+  const spent = Number(task.actualCost || 0)
+  if (!budget) return <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><TriangleAlert size={14} className="mt-0.5 shrink-0" />No budget has been set for this task{spent ? `, and ${formatBdt(spent)} has been spent` : ''}. Use Add budget under Costs and expenses.</p>
+  const left = budget - spent
+  return (
+    <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
+      <span>Budget given <strong className="font-semibold tabular-nums text-slate-900">{formatBdt(budget)}</strong></span>
+      <span>Spent <strong className="font-semibold tabular-nums text-slate-900">{formatBdt(spent)}</strong></span>
+      <span className={left < 0 ? 'font-semibold text-rose-700' : ''}>{left < 0 ? `${formatBdt(-left)} over budget` : `${formatBdt(left)} left`}</span>
+    </p>
+  )
+}
 
 export function CompletionReview({ task, report, isManager, onReview }) {
   const [outcome, setOutcome] = useState('resolved')
@@ -65,6 +81,7 @@ export function CompletionReview({ task, report, isManager, onReview }) {
         }}
       />
 
+      <CostLine task={task} />
       {task.pendingCost > 0 && <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900"><TriangleAlert size={14} className="mt-0.5 shrink-0" />{formatBdt(task.pendingCost)} of expenses are still pending approval. They only count toward the task cost once approved.</p>}
 
       <fieldset className="mt-4">
