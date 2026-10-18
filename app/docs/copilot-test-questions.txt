@@ -1,0 +1,61 @@
+TerraLink Copilot - test questions
+==================================
+Type or paste these into Copilot. Questions can be in English, Bangla or Banglish.
+
+
+PROJECT MANAGER (log in as Nusrat Jahan) - full access
+------------------------------------------------------
+
+Overview
+  Give me today's summary
+  How is Hatirjheel?
+  Satellite result for Dhanmondi Lake?
+
+Tasks
+  Which tasks are overdue?
+  What is due this week?
+  Show details of TL-105
+
+Confidential (manager only)
+  How is the overall budget?
+  What is waiting for approval?
+  How is the team workload?
+  Who reported at Gulshan Lake?
+
+Reports and data
+  Which reports are awaiting review?
+  What did the AI find in waste reports?
+  Show details of RPT-004
+  What are the limitations of the data?
+
+Follow-up memory (ask one after the other)
+  How is Hatirjheel?
+  and what work is open there?
+
+Bangla / Banglish
+  ধানমন্ডি লেকের অবস্থা কী?
+  Hatirjheel er obostha ki?
+
+
+FIELD COORDINATOR (log in as Rahim Uddin) - own work and lake information
+-------------------------------------------------------------------------
+
+My work
+  What are my tasks?
+  What are my deadlines this week?
+  Which tasks are overdue?
+
+My budget
+  How much budget do I have left?
+  Which of my expenses are waiting for approval?
+
+Lakes (public information)
+  How is Dhanmondi Lake?
+  Any waste reports at Gulshan?
+  Ramna lake er obostha ki?
+
+Access check - these should be declined
+  What is the total budget?
+  How is the team workload?
+  Who reported, give me the phone number
+  Show details of TL-096        (a task assigned to someone else)

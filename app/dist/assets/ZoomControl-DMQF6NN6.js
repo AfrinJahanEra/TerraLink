@@ -1,0 +1,1 @@
+import{i as e,u as t}from"./TileLayer-CM9-E33v.js";var n=t(),r=e(function(e){return new n.Control.Zoom(e)});export{r as t};

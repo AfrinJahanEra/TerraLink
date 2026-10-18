@@ -1,0 +1,1 @@
+import{i as e}from"./rolldown-runtime-Dd_uD5pT.js";import{n as t}from"./jsx-runtime-DKj5X9O4.js";import{W as n}from"./index-BZtbvUTj.js";var r=e(t(),1);function i(){return(0,r.useContext)(n)??{openMeeting:()=>{},canMeet:!1}}export{i as t};
