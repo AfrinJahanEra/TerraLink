@@ -1,15 +1,18 @@
-import { ArrowLeft, Check, MapPin, Play, Satellite } from 'lucide-react'
+import { ArrowLeft, Check, Download, LoaderCircle, MapPin, Play, Satellite } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AreaChangeSummary } from '../components/compare/AreaChangeSummary'
 import { ComparisonViewer } from '../components/compare/ComparisonViewer'
 import { DataQualityPanel } from '../components/compare/DataQualityPanel'
+import { GroundEvidencePanel } from '../components/compare/GroundEvidencePanel'
+import { HotspotEvidenceCard } from '../components/compare/HotspotEvidenceCard'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Toast } from '../components/ui/Toast'
 import { SITE_STATUS } from '../constants/status'
 import { useApp } from '../hooks/useApp'
 import { useNotice } from '../hooks/useNotice'
+import { useSiteReport } from '../hooks/useSiteReport'
 import { observe } from '../services/observation'
 import { compareObservations } from '../services/sentinel'
 import { todayInDhaka } from '../utils/reports'
@@ -67,6 +70,9 @@ export function ComparePage() {
     () => site && earlier.state === 'done' && later.state === 'done' ? compareObservations(earlier.observation, later.observation, site) : null,
     [earlier, later, site],
   )
+  const siteReport = useSiteReport({ site, earlier: earlier.observation, later: later.observation, result })
+  const [hotspotId, setHotspotId] = useState('')
+  const hotspot = siteReport.wasteReports.find((report) => report.id === hotspotId) ?? null
   const savedAlready = result && comparisons.some((item) => item.siteId === site.id && item.earlier.id === earlier.observation.id && item.later.id === later.observation.id)
 
   if (!site) {
@@ -114,12 +120,19 @@ export function ComparePage() {
           <div className="mt-3 flex flex-wrap items-center gap-2"><h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{site.name}</h2><Badge tone={status.tone}>{status.label}</Badge></div>
           <p className="mt-2 flex items-center gap-1.5 text-sm text-slate-500"><MapPin size={15} />{site.location} · {site.area} mapped</p>
         </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        {result && (
+          <Button type="button" onClick={siteReport.downloadPdf} disabled={siteReport.pdf.busy} className="h-10">
+            {siteReport.pdf.busy ? <LoaderCircle size={15} className="animate-spin" /> : <Download size={15} />}Site report PDF
+          </Button>
+        )}
         <label className="block">
           <span className="text-xs font-semibold text-slate-600">Water body</span>
           <select value={site.id} onChange={(event) => navigate(`/compare/${event.target.value}?${searchParams.toString()}`)} className={`${inputClass} lg:w-64`}>
             {sites.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
+        </div>
       </header>
 
       <form onSubmit={submit} className="rounded-xl border border-slate-200 bg-white p-5 shadow-card" aria-label="Choose dates">
@@ -133,10 +146,11 @@ export function ComparePage() {
         <p className="mt-4 border-t border-slate-100 pt-3 text-[11px] leading-5 text-slate-500">TerraLink picks the clearest Sentinel-2 scene near each date that fully covers the outline, and shows the real acquisition date. Compare the same time of year, because water level follows the monsoon. Both dates are searched in the public Sentinel-2 archive, so the first run for a pair downloads imagery and later runs reuse it from this browser.</p>
       </form>
 
-      <ComparisonViewer site={site} earlier={earlier} later={later} onUseSuggestion={applySuggestion} />
+      <ComparisonViewer site={site} earlier={earlier} later={later} onUseSuggestion={applySuggestion} wasteReports={siteReport.wasteReports} onSelectHotspot={setHotspotId} />
 
       {result ? (
         <>
+          <GroundEvidencePanel site={site} earlier={earlier.observation} result={result} report={siteReport} />
           <AreaChangeSummary earlier={earlier.observation} later={later.observation} result={result} />
           <DataQualityPanel site={site} earlier={earlier.observation} later={later.observation} result={result} />
 
@@ -154,6 +168,9 @@ export function ComparePage() {
         <p className="rounded-xl border border-dashed border-slate-300 bg-white px-5 py-8 text-center text-xs leading-5 text-slate-500">The measured area appears here once both dates have a usable scene. Nothing is estimated until then.</p>
       )}
 
+      {hotspot && later.observation && (
+        <HotspotEvidenceCard site={site} report={hotspot} later={later.observation} pdf={siteReport.pdf} onDownloadPdf={siteReport.downloadPdf} onClose={() => setHotspotId('')} />
+      )}
       <Toast message={notice} />
     </div>
   )

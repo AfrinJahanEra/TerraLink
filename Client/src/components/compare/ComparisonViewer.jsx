@@ -1,9 +1,12 @@
-import { CircleAlert, LoaderCircle, SearchX } from 'lucide-react'
+import { CircleAlert, LoaderCircle, ScanSearch, SearchX } from 'lucide-react'
 import { useState } from 'react'
+import { useEnhancedImage } from '../../hooks/useImagery'
 import { usePhoto } from '../../hooks/usePhoto'
 import { cn } from '../../utils/cn'
 import { formatAcquired } from '../../utils/observations'
 import { Button } from '../ui/Button'
+import { AerialView } from './AerialView'
+import { SatelliteWasteLayer } from './SatelliteWasteLayer'
 
 const WIDTH = 720
 const HEIGHT = 480
@@ -47,15 +50,16 @@ function PaneState({ run, side, onUseSuggestion }) {
   )
 }
 
-function Pane({ run, label, site, showMask, showOutline, onUseSuggestion }) {
+function Pane({ run, label, site, showMask, showOutline, sharpen, onUseSuggestion }) {
   const observation = run.observation
   const rgb = usePhoto(observation?.imageKeys.rgb)
   const mask = usePhoto(observation?.imageKeys.mask)
+  const display = useEnhancedImage(rgb.url, sharpen)
 
   if (run.state !== 'done' || !observation) return <PaneState run={run} side={label === 'Earlier' ? 'from' : 'to'} onUseSuggestion={onUseSuggestion} />
   return (
     <>
-      {rgb.url ? <img src={rgb.url} alt={`${label} satellite image of ${site.name} from ${formatAcquired(observation.acquiredAt).date}`} className="absolute inset-0 size-full object-cover" draggable={false} /> : <div className="absolute inset-0 animate-pulse bg-slate-200" />}
+      {rgb.url ? <img src={display} alt={`${label} satellite image of ${site.name} from ${formatAcquired(observation.acquiredAt).date}`} className="absolute inset-0 size-full object-cover" draggable={false} /> : <div className="absolute inset-0 animate-pulse bg-slate-200" />}
       {showMask && mask.url && <img src={mask.url} alt="" className="absolute inset-0 size-full object-cover" style={{ imageRendering: 'pixelated' }} draggable={false} />}
       {showOutline && <Outline site={site} />}
     </>
@@ -69,15 +73,21 @@ function Chip({ children, className }) {
 const captionFor = (label, run) => run.observation ? `${label} · ${formatAcquired(run.observation.acquiredAt).date}` : label
 
 /** Side-by-side or swipe view of two dated observations over the same extent. */
-export function ComparisonViewer({ site, earlier, later, onUseSuggestion }) {
+export function ComparisonViewer({ site, earlier, later, onUseSuggestion, wasteReports = [], onSelectHotspot }) {
   const [mode, setMode] = useState('swipe')
   const [position, setPosition] = useState(50)
   const [showMask, setShowMask] = useState(true)
   const [showOutline, setShowOutline] = useState(true)
+  const [showWaste, setShowWaste] = useState(true)
+  const [sharpen, setSharpen] = useState(true)
+  // Bumping the key remounts the waste layer, which replays its scan animation.
+  const [scanRun, setScanRun] = useState(0)
   const ready = earlier.state === 'done' && later.state === 'done'
-  const paneProps = { site, showMask, showOutline, onUseSuggestion }
+  const wasteLayer = ready && showWaste ? <SatelliteWasteLayer key={`${site.id}-${scanRun}`} site={site} reports={wasteReports} onSelect={onSelectHotspot} /> : null
+  const paneProps = { site, showMask, showOutline, sharpen, onUseSuggestion }
   // Until both dates have an image there is nothing to swipe between, so each date shows its own progress.
-  const effectiveMode = ready ? mode : 'side'
+  // The aerial basemap does not depend on the Sentinel-2 runs, so it is always available.
+  const effectiveMode = mode === 'aerial' || ready ? mode : 'side'
 
   const toggle = (checked, setChecked, label) => (
     <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} className="size-4 accent-brand-700" />{label}</label>
@@ -89,18 +99,30 @@ export function ComparisonViewer({ site, earlier, later, onUseSuggestion }) {
         <div><h2 className="text-sm font-semibold text-slate-900">Same water body, two dates</h2><p className="mt-0.5 text-xs text-slate-400">Both images cover the same extent and are drawn from real Sentinel-2 scenes.</p></div>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <div role="group" aria-label="View mode" className="inline-flex rounded-lg border border-slate-200 p-0.5 text-xs font-semibold">
-            {[['swipe', 'Swipe'], ['side', 'Side by side']].map(([id, label]) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)} className={cn('rounded-md px-3 py-1.5 transition', mode === id ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-50')}>{label}</button>)}
+            {[['swipe', 'Swipe'], ['side', 'Side by side'], ['aerial', 'Aerial 0.3 m']].map(([id, label]) => <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id)} className={cn('rounded-md px-3 py-1.5 transition', mode === id ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-50')}>{label}</button>)}
           </div>
-          {toggle(showMask, setShowMask, 'Water mask')}
-          {toggle(showOutline, setShowOutline, 'Outline')}
+          {mode !== 'aerial' && (
+            <>
+              {toggle(sharpen, setSharpen, 'Sharpen')}
+              {toggle(showMask, setShowMask, 'Water mask')}
+              {toggle(showOutline, setShowOutline, 'Outline')}
+              {toggle(showWaste, setShowWaste, 'AI waste layer')}
+            </>
+          )}
+          <button type="button" onClick={() => { setShowWaste(true); setMode((current) => (current === 'aerial' ? 'swipe' : current)); setScanRun((run) => run + 1) }} disabled={!ready} className="inline-flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-2.5 py-1.5 text-xs font-semibold text-green-700 transition hover:bg-green-100 disabled:opacity-50"><ScanSearch size={14} />Scan for waste</button>
         </div>
       </div>
 
-      {effectiveMode === 'side' ? (
+      {effectiveMode === 'aerial' ? (
+        <div className="relative aspect-[3/2] overflow-hidden bg-slate-900">
+          <AerialView site={site} reports={wasteReports} onSelect={onSelectHotspot} />
+        </div>
+      ) : effectiveMode === 'side' ? (
         <div className="grid gap-px bg-slate-200 md:grid-cols-2">
           {[['Earlier', earlier], ['Later', later]].map(([label, run]) => (
             <div key={label} className="relative aspect-[3/2] overflow-hidden bg-slate-100">
               <Pane run={run} label={label} {...paneProps} />
+              {label === 'Later' && wasteLayer}
               <Chip className="left-3">{captionFor(label, run)}</Chip>
             </div>
           ))}
@@ -108,7 +130,7 @@ export function ComparisonViewer({ site, earlier, later, onUseSuggestion }) {
       ) : (
         <div className="relative aspect-[3/2] overflow-hidden bg-slate-100">
           <div className="absolute inset-0"><Pane run={earlier} label="Earlier" {...paneProps} /></div>
-          <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${position}%)` }}><Pane run={later} label="Later" {...paneProps} /></div>
+          <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${position}%)` }}><Pane run={later} label="Later" {...paneProps} />{wasteLayer}</div>
           <Chip className="left-3">{captionFor('Earlier', earlier)}</Chip>
           <Chip className="right-3">{captionFor('Later', later)}</Chip>
           <>
@@ -122,7 +144,8 @@ export function ComparisonViewer({ site, earlier, later, onUseSuggestion }) {
         <span className="inline-flex items-center gap-2"><span className="size-3 rounded-sm bg-cyan-500/70" />Water (NDWI above 0)</span>
         <span className="inline-flex items-center gap-2"><span className="size-3 rounded-sm bg-slate-500/70" />Unusable pixels (cloud, shadow, no data)</span>
         <span className="inline-flex items-center gap-2"><span className="h-0.5 w-4 bg-slate-700" />Mapped outline plus a 10 m tolerance</span>
-        <span className="ml-auto text-slate-400">Contains modified Copernicus Sentinel data</span>
+        <span className="inline-flex items-center gap-2"><span className="size-3 rounded-sm border-2 border-green-400 bg-green-400/25" />Waste hotspot: GPS of an AI-verified ground photo</span>
+        <span className="ml-auto text-slate-400">{effectiveMode === 'aerial' ? 'Aerial imagery: Esri World Imagery (Maxar, Earthstar Geographics)' : `Contains modified Copernicus Sentinel data${sharpen ? ', contrast-stretched and sharpened' : ''}`}</span>
       </div>
     </section>
   )

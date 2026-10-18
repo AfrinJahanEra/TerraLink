@@ -1,13 +1,16 @@
-import { Camera, LoaderCircle, LocateFixed, Send, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Camera, CircleCheck, LoaderCircle, LocateFixed, LockKeyhole, ScanSearch, Send, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PHOTO_RULES, REPORT_CATEGORIES } from '../../constants/reports'
 import { useApp } from '../../hooks/useApp'
 import { compressImage, putPhoto } from '../../services/photoStore'
+import { summarizeAnalyses } from '../../services/wasteDetection'
+import { attachWastePdf } from '../../services/wastePdf'
 import { cn } from '../../utils/cn'
 import { findSiteForPoint } from '../../utils/geo'
 import { todayInDhaka } from '../../utils/reports'
 import { Button } from '../ui/Button'
 import { LocationPicker } from './LocationPicker'
+import { WasteScanModal } from './WasteScanModal'
 
 const inputClass = 'mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100'
 
@@ -56,6 +59,8 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
   const fileInput = useRef(null)
   const summaryRef = useRef(null)
   const [attempt, setAttempt] = useState(0)
+  // Photos waiting in, or reopened in, the AI waste detection window.
+  const [scanUrls, setScanUrls] = useState([])
 
   useEffect(() => {
     const urls = previews.current
@@ -64,6 +69,9 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
 
   const focusSite = sites.find((site) => site.id === siteId) ?? null
   const problems = Object.entries(errors).filter(([, message]) => message)
+  const scanItems = photos.filter((photo) => scanUrls.includes(photo.url))
+  const allScanned = photos.every((photo) => photo.analysis)
+  const wasteFound = photos.some((photo) => photo.analysis?.hasWaste)
 
   // After a failed submit, bring the list of problems into view so the click never looks like it did nothing.
   useEffect(() => {
@@ -83,18 +91,33 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
     const accepted = next.slice(0, Math.max(room, 0)).map((file) => {
       const url = URL.createObjectURL(file)
       previews.current.add(url)
-      return { file, url }
+      return { file, url, analysis: null, annotatedBlob: null, annotatedUrl: '' }
     })
     setPhotos((current) => [...current, ...accepted])
+    if (accepted.length) setScanUrls(accepted.map((photo) => photo.url))
     setErrors((current) => ({ ...current, photos: problem }))
     if (fileInput.current) fileInput.current.value = ''
   }
 
   function removePhoto(url) {
-    URL.revokeObjectURL(url)
-    previews.current.delete(url)
+    const removed = photos.find((photo) => photo.url === url)
+    ;[url, removed?.annotatedUrl].filter(Boolean).forEach((item) => {
+      URL.revokeObjectURL(item)
+      previews.current.delete(item)
+    })
     setPhotos((current) => current.filter((photo) => photo.url !== url))
+    setScanUrls((current) => current.filter((item) => item !== url))
   }
+
+  const handleScanResult = useCallback((url, { analysis, annotatedBlob }) => {
+    const annotatedUrl = annotatedBlob ? URL.createObjectURL(annotatedBlob) : ''
+    if (annotatedUrl) previews.current.add(annotatedUrl)
+    setPhotos((current) => current.map((photo) => (photo.url === url ? { ...photo, analysis, annotatedBlob, annotatedUrl } : photo)))
+    if (analysis.hasWaste) {
+      setCategory((current) => current || 'waste_dumping')
+      setErrors((current) => ({ ...current, photos: '', category: '' }))
+    }
+  }, [])
 
   function chooseSite(id) {
     setSiteId(id)
@@ -125,6 +148,7 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
   function validate() {
     const next = {}
     if (!photos.length) next.photos = 'Add at least one photo of the problem.'
+    else if (!wasteFound) next.photos = 'No waste was detected in the photos. Add a closer photo of the waste.'
     if (!category) next.category = 'Choose the type of problem.'
     if (!location) next.location = 'Mark the location on the map.'
     if (!observedAt) next.observedAt = 'Enter the date you saw the problem.'
@@ -147,10 +171,14 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
     try {
       const stamp = Date.now()
       const stored = []
+      const analyses = []
       for (const [index, photo] of photos.entries()) {
         const id = `photo-${stamp}-${index}`
         await putPhoto(id, await compressImage(photo.file))
         stored.push({ id, name: photo.file.name })
+        const annotatedPhotoId = photo.annotatedBlob ? `ai-photo-${stamp}-${index}` : null
+        if (annotatedPhotoId) await putPhoto(annotatedPhotoId, photo.annotatedBlob)
+        analyses.push({ ...photo.analysis, photoId: id, annotatedPhotoId, name: photo.file.name })
       }
       const report = submitReport({
         siteId: siteId && siteId !== 'other' ? siteId : null,
@@ -160,8 +188,11 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
         longitude: location[1],
         observedAt,
         photos: stored,
+        aiAnalysis: { ...summarizeAnalyses(analyses), pdfId: `ai-report-${stamp}` },
         reporter: { name: role.user.name, email: role.user.email, contact: contact.trim() },
       })
+      // The PDF is rebuilt from the saved analysis when it is opened, so a failure here does not block the report.
+      await attachWastePdf(report, sites.find((site) => site.id === report.siteId)?.name).catch(() => undefined)
       onSubmitted(report)
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'The report could not be saved. Please try again.')
@@ -177,8 +208,13 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
       <Card number="1" id="evidence-heading" title="Photo evidence" hint={`Up to ${PHOTO_RULES.maxFiles} photos`}>
         <div className={cn('grid flex-1 grid-cols-3 gap-2.5', photos.length ? 'content-start' : 'content-stretch')}>
           {photos.map((photo, index) => (
-            <div key={photo.url} className="relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-              <img src={photo.url} alt={`Selected photo ${index + 1}`} className="size-full object-cover" />
+            <div key={photo.url} className={cn('relative aspect-[4/3] overflow-hidden rounded-lg border bg-slate-100', photo.analysis?.hasWaste ? 'border-green-500 ring-2 ring-green-500/30' : 'border-slate-200')}>
+              <button type="button" onClick={() => setScanUrls([photo.url])} aria-label={`Open AI result for photo ${index + 1}`} className="block size-full">
+                <img src={photo.annotatedUrl || photo.url} alt={`Selected photo ${index + 1}`} className="size-full object-cover" />
+              </button>
+              <span className={cn('pointer-events-none absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold shadow-card', photo.analysis?.hasWaste ? 'bg-green-500 text-white' : 'bg-white/95 text-slate-600')}>
+                {photo.analysis?.hasWaste ? <><CircleCheck size={11} />Waste {Math.round(photo.analysis.confidence * 100)}%</> : photo.analysis ? 'No waste' : <><ScanSearch size={11} />Scanning</>}
+              </span>
               <button type="button" onClick={() => removePhoto(photo.url)} aria-label={`Remove photo ${index + 1}`} className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-md bg-white/95 text-slate-700 shadow-card hover:text-rose-600"><X size={14} /></button>
             </div>
           ))}
@@ -272,10 +308,18 @@ export function ReportForm({ initialSiteId = '', onSubmitted }) {
           <span className="shrink-0 text-xs font-semibold text-slate-700">Phone <span className="font-normal text-slate-400">(optional)</span></span>
           <input value={contact} onChange={(event) => setContact(event.target.value)} maxLength={40} autoComplete="tel" className={cn(inputClass, 'mt-0 h-9 w-40')} />
         </label>
-        <Button type="submit" disabled={submitting} className="h-10 px-6 lg:ml-auto">
-          {submitting ? <LoaderCircle size={15} className="animate-spin" /> : <Send size={15} />}{submitting ? 'Saving report' : 'Submit report'}
-        </Button>
+        <div className="flex flex-col gap-1.5 lg:ml-auto lg:flex-row lg:items-center lg:gap-3">
+          {!wasteFound && (
+            <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
+              <LockKeyhole size={13} className="shrink-0" />{photos.length && !allScanned ? 'Waiting for the AI scan to finish' : 'Submit unlocks when AI detects waste in a photo'}
+            </p>
+          )}
+          <Button type="submit" disabled={submitting || !wasteFound || !allScanned} className="h-10 px-6">
+            {submitting ? <LoaderCircle size={15} className="animate-spin" /> : <Send size={15} />}{submitting ? 'Saving report' : 'Submit report'}
+          </Button>
+        </div>
       </section>
+      {scanItems.length > 0 && <WasteScanModal items={scanItems} onResult={handleScanResult} onRemove={removePhoto} onClose={() => setScanUrls([])} />}
     </form>
   )
 }

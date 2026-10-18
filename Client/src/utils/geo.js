@@ -38,3 +38,11 @@ export function findSiteForPoint(point, sites, tolerance = 60) {
   })
   return best?.site ?? null
 }
+
+/** Where a lat/lon point falls in a site's satellite image, as 0–1 fractions from the top left, or null when outside it. */
+export function imageFraction(site, latitude, longitude) {
+  const [west, south, east, north] = site.imageBox
+  const x = (longitude - west) / (east - west)
+  const y = (north - latitude) / (north - south)
+  return x >= 0 && x <= 1 && y >= 0 && y <= 1 ? { x, y } : null
+}

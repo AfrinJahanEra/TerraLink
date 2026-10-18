@@ -31,6 +31,7 @@ export function ReportCard({ report, siteName, active = false, onSelect }) {
           <span className="text-xs font-semibold text-slate-800">{category.label}</span>
           <Badge tone={status.tone} className="px-2 py-0.5 text-[10px]">{status.label}</Badge>
           {report.resolved && <Badge tone="brandDeep" className="px-2 py-0.5 text-[10px]">Resolved</Badge>}
+          {report.aiAnalysis?.hasWaste && <span className="rounded-full bg-green-500 px-2 py-0.5 text-[10px] font-semibold text-white">AI: waste {Math.round(report.aiAnalysis.confidence * 100)}%</span>}
         </span>
         <span className="mt-1 line-clamp-2 block text-[11px] leading-5 text-slate-500">{report.description}</span>
         <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-400">

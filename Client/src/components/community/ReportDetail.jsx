@@ -9,6 +9,7 @@ import { Badge } from '../ui/Badge'
 import { Lightbox } from './Lightbox'
 import { PhotoImage } from './PhotoImage'
 import { ReportProgress } from './ReportProgress'
+import { WasteAnalysis } from './WasteAnalysis'
 
 /** Full record of one report. `showPrivate` adds reporter contact details, for reviewers only. Children render below the record (review actions). */
 export function ReportDetail({ report, siteName, showPrivate = false, ownReport = false, children }) {
@@ -38,6 +39,8 @@ export function ReportDetail({ report, siteName, showPrivate = false, ownReport 
       ) : (
         <p className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-[11px] text-slate-500">This is a sample record, so no photo is attached.</p>
       )}
+
+      {report.aiAnalysis?.hasWaste && <WasteAnalysis report={report} siteName={siteName} onOpenPhoto={setLightbox} />}
 
       <p className="mt-4 text-sm leading-6 text-slate-700">{report.description}</p>
 
