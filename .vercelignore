@@ -1,0 +1,15 @@
+# Deploy from the repository root; the Vercel project's Root Directory is `app`.
+# Never upload local secrets or runtime data; Vercel builds use the project's Environment Variables.
+.vercel-tmp
+.vercel
+node_modules
+app/node_modules
+app/dist
+app/local-data
+app/.vercel
+app/.env
+app/.env.*
+!app/.env.example
+Terralink_Presentation_v12.pdf
+Terralink_Presentation_v12.pptx
+~$*
